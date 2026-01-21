@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Header } from "@/components/header";
 import { Sidebar } from "@/components/sidebar";
@@ -26,13 +26,17 @@ function HomeContent() {
   const countriesData = useQuery(api.countries.list) ?? [];
   const languagesData = useQuery(api.languages.list) ?? [];
 
-  // Fetch channels
-  const channelsResult = useQuery(api.channels.list, {
-    search: filters.search || undefined,
-    countries: filters.countries.length ? filters.countries : undefined,
-    categories: filters.categories.length ? filters.categories : undefined,
-    languages: filters.languages.length ? filters.languages : undefined,
-  });
+  // Fetch channels with pagination
+  const { results: channels, status, loadMore } = usePaginatedQuery(
+    api.channels.list,
+    {
+      search: filters.search || undefined,
+      countries: filters.countries.length ? filters.countries : undefined,
+      categories: filters.categories.length ? filters.categories : undefined,
+      languages: filters.languages.length ? filters.languages : undefined,
+    },
+    { initialNumItems: 48 }
+  );
 
   // Fetch favorite channels if showing favorites
   const favoriteChannels = useQuery(
@@ -110,14 +114,14 @@ function HomeContent() {
     if (showHistory && historyChannels) {
       return historyChannels;
     }
-    return channelsResult?.channels ?? [];
-  }, [showFavorites, favoriteChannels, showHistory, historyChannels, channelsResult]);
+    return channels;
+  }, [showFavorites, favoriteChannels, showHistory, historyChannels, channels]);
 
   const totalCount = useMemo(() => {
     if (showFavorites) return favorites.length;
     if (showHistory) return historyChannelIds.length;
-    return channelsResult?.totalCount ?? 0;
-  }, [showFavorites, favorites.length, showHistory, historyChannelIds.length, channelsResult]);
+    return channels.length;
+  }, [showFavorites, favorites.length, showHistory, historyChannelIds.length, channels.length]);
 
   // Build filter chips
   const filterChips = useMemo(() => {
@@ -195,7 +199,14 @@ function HomeContent() {
     if (show) setShowFavorites(false);
   };
 
-  const isLoading = channelsResult === undefined;
+  const handleLoadMore = useCallback(() => {
+    if (status === "CanLoadMore") {
+      loadMore(48);
+    }
+  }, [status, loadMore]);
+
+  const isLoading = status === "LoadingFirstPage";
+  const hasMore = status === "CanLoadMore";
 
   return (
     <div className="min-h-screen bg-background">
@@ -271,7 +282,8 @@ function HomeContent() {
             onPlay={handlePlay}
             onToggleFavorite={toggleFavorite}
             isLoading={isLoading}
-            hasMore={false}
+            hasMore={hasMore && !showFavorites && !showHistory}
+            onLoadMore={handleLoadMore}
           />
         </main>
       </div>

@@ -1,4 +1,5 @@
 import { query } from "./_generated/server";
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
 export const list = query({
@@ -7,49 +8,62 @@ export const list = query({
     categories: v.optional(v.array(v.string())),
     languages: v.optional(v.array(v.string())),
     search: v.optional(v.string()),
-    cursor: v.optional(v.string()),
-    limit: v.optional(v.number()),
+    paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const limit = args.limit ?? 48;
-
     // If search is provided, use search index
     if (args.search && args.search.trim()) {
       const results = await ctx.db
         .query("channels")
         .withSearchIndex("search_name", (q) => q.search("name", args.search!))
-        .take(limit);
+        .take(args.paginationOpts.numItems);
 
       // Apply filters to search results
       const filtered = filterChannels(results, args);
       return {
-        channels: filtered,
-        nextCursor: undefined,
-        totalCount: filtered.length,
+        page: filtered,
+        isDone: true,
+        continueCursor: "",
       };
     }
 
-    // Otherwise, get all channels with pagination
-    let query = ctx.db.query("channels");
+    // If filtering by a single country, use the country index for efficiency
+    if (args.countries?.length === 1 && !args.categories?.length && !args.languages?.length) {
+      const result = await ctx.db
+        .query("channels")
+        .withIndex("by_country", (q) => q.eq("country", args.countries![0]))
+        .paginate(args.paginationOpts);
 
-    const results = await query.collect();
+      return result;
+    }
 
-    // Apply filters
-    const filtered = filterChannels(results, args);
+    // For no filters or complex filters, use pagination
+    // When filters are applied, we fetch more and filter client-side
+    const hasFilters = args.countries?.length || args.categories?.length || args.languages?.length;
 
-    // Manual pagination
-    const startIndex = args.cursor ? parseInt(args.cursor) : 0;
-    const paginated = filtered.slice(startIndex, startIndex + limit);
-    const nextCursor =
-      startIndex + limit < filtered.length
-        ? String(startIndex + limit)
-        : undefined;
+    if (hasFilters) {
+      // Fetch more items to account for filtering
+      const fetchLimit = args.paginationOpts.numItems * 5;
+      const results = await ctx.db
+        .query("channels")
+        .take(fetchLimit);
 
-    return {
-      channels: paginated,
-      nextCursor,
-      totalCount: filtered.length,
-    };
+      const filtered = filterChannels(results, args);
+      const page = filtered.slice(0, args.paginationOpts.numItems);
+
+      return {
+        page,
+        isDone: filtered.length <= args.paginationOpts.numItems,
+        continueCursor: "",
+      };
+    }
+
+    // No filters - use standard pagination
+    const result = await ctx.db
+      .query("channels")
+      .paginate(args.paginationOpts);
+
+    return result;
   },
 });
 
