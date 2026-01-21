@@ -57,6 +57,7 @@ function HomeContent() {
     { initialNumItems: 48 },
   );
 
+
   // Fetch favorite channels if showing favorites
   const favoriteChannels = useQuery(
     api.channels.getByIds,
@@ -231,9 +232,6 @@ function HomeContent() {
     historyTimeFilter,
   ]);
 
-  const totalCount = useMemo(() => {
-    return displayChannels.length;
-  }, [displayChannels.length]);
 
   // Build filter chips
   const filterChips = useMemo(() => {
@@ -404,7 +402,6 @@ function HomeContent() {
           <div className="mb-4">
             <FilterChips
               chips={filterChips}
-              totalCount={totalCount}
               onRemove={handleRemoveChip}
               onClearAll={clearFilters}
             />

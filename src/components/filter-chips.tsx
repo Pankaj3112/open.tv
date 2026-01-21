@@ -13,30 +13,22 @@ interface FilterChip {
 
 interface FilterChipsProps {
   chips: FilterChip[];
-  totalCount: number;
   onRemove: (type: FilterChip["type"], id: string) => void;
   onClearAll: () => void;
 }
 
 export function FilterChips({
   chips,
-  totalCount,
   onRemove,
   onClearAll,
 }: FilterChipsProps) {
   if (chips.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground">
-        Showing {totalCount.toLocaleString()} channels
-      </div>
-    );
+    return null;
   }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm text-muted-foreground">
-        Showing {totalCount.toLocaleString()} channels:
-      </span>
+      <span className="text-sm text-muted-foreground">Filters:</span>
 
       {chips.map((chip) => (
         <Badge
