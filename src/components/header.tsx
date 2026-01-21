@@ -34,7 +34,7 @@ export function Header(props: HeaderProps) {
       <div className="flex h-14 items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Tv className="h-6 w-6 text-primary" />
-          <span className="text-lg font-semibold">IPTV Browser</span>
+          <span className="text-lg font-semibold">open.tv</span>
         </div>
 
         <div className="flex items-center gap-2">
