@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
 interface FilterChip {
-  type: "category" | "country" | "language";
+  type: "category" | "country";
   id: string;
   label: string;
   icon?: string;

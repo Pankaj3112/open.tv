@@ -7,7 +7,6 @@ export interface Filters {
   search: string;
   countries: string[];
   categories: string[];
-  languages: string[];
   playing: string | null;
 }
 
@@ -21,7 +20,6 @@ export function useFilters() {
     countries: searchParams.get("countries")?.split(",").filter(Boolean) || [],
     categories:
       searchParams.get("categories")?.split(",").filter(Boolean) || [],
-    languages: searchParams.get("languages")?.split(",").filter(Boolean) || [],
     playing: searchParams.get("playing"),
   };
 
@@ -50,14 +48,6 @@ export function useFilters() {
           params.set("categories", updates.categories.join(","));
         } else {
           params.delete("categories");
-        }
-      }
-
-      if (updates.languages !== undefined) {
-        if (updates.languages.length) {
-          params.set("languages", updates.languages.join(","));
-        } else {
-          params.delete("languages");
         }
       }
 

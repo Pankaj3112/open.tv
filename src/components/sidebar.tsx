@@ -22,9 +22,6 @@ interface SidebarProps {
   countries: FilterOption[];
   selectedCountries: string[];
   onCountriesChange: (selected: string[]) => void;
-  languages: FilterOption[];
-  selectedLanguages: string[];
-  onLanguagesChange: (selected: string[]) => void;
   showFavorites: boolean;
   onShowFavoritesChange: (show: boolean) => void;
   showHistory: boolean;
@@ -41,9 +38,6 @@ export function Sidebar({
   countries,
   selectedCountries,
   onCountriesChange,
-  languages,
-  selectedLanguages,
-  onLanguagesChange,
   showFavorites,
   onShowFavoritesChange,
   showHistory,
@@ -74,14 +68,6 @@ export function Sidebar({
           options={countries}
           selected={selectedCountries}
           onChange={onCountriesChange}
-          searchable
-        />
-
-        <FilterSection
-          title="Languages"
-          options={languages}
-          selected={selectedLanguages}
-          onChange={onLanguagesChange}
           searchable
         />
 

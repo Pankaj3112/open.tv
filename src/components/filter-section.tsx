@@ -84,16 +84,17 @@ export function FilterSection({
               {displayOptions.map((option) => (
                 <label
                   key={option.id}
-                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent"
+                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent min-w-0"
                 >
                   <Checkbox
                     checked={selected.includes(option.id)}
                     onCheckedChange={() => toggleOption(option.id)}
+                    className="shrink-0"
                   />
-                  {option.icon && <span>{option.icon}</span>}
-                  <span className="flex-1 truncate">{option.label}</span>
+                  {option.icon && <span className="shrink-0">{option.icon}</span>}
+                  <span className="truncate">{option.label}</span>
                   {option.count !== undefined && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground shrink-0">
                       ({option.count})
                     </span>
                   )}

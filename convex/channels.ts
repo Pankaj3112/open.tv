@@ -6,7 +6,6 @@ export const list = query({
   args: {
     countries: v.optional(v.array(v.string())),
     categories: v.optional(v.array(v.string())),
-    languages: v.optional(v.array(v.string())),
     search: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
@@ -28,7 +27,7 @@ export const list = query({
     }
 
     // If filtering by a single country, use the country index for efficiency
-    if (args.countries?.length === 1 && !args.categories?.length && !args.languages?.length) {
+    if (args.countries?.length === 1 && !args.categories?.length) {
       const result = await ctx.db
         .query("channels")
         .withIndex("by_country", (q) => q.eq("country", args.countries![0]))
@@ -39,7 +38,7 @@ export const list = query({
 
     // For no filters or complex filters, use pagination
     // When filters are applied, we fetch more and filter client-side
-    const hasFilters = args.countries?.length || args.categories?.length || args.languages?.length;
+    const hasFilters = args.countries?.length || args.categories?.length;
 
     if (hasFilters) {
       // Fetch more items to account for filtering
@@ -72,7 +71,6 @@ function filterChannels(
   args: {
     countries?: string[];
     categories?: string[];
-    languages?: string[];
   }
 ) {
   return channels.filter((channel) => {
@@ -81,10 +79,6 @@ function filterChannels(
     }
     if (args.categories?.length) {
       if (!channel.categories.some((c: string) => args.categories!.includes(c)))
-        return false;
-    }
-    if (args.languages?.length) {
-      if (!channel.languages.some((l: string) => args.languages!.includes(l)))
         return false;
     }
     return true;

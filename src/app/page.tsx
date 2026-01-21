@@ -24,7 +24,6 @@ function HomeContent() {
   // Fetch reference data
   const categoriesData = useQuery(api.categories.list) ?? [];
   const countriesData = useQuery(api.countries.list) ?? [];
-  const languagesData = useQuery(api.languages.list) ?? [];
 
   // Fetch channels with pagination
   const { results: channels, status, loadMore } = usePaginatedQuery(
@@ -33,7 +32,6 @@ function HomeContent() {
       search: filters.search || undefined,
       countries: filters.countries.length ? filters.countries : undefined,
       categories: filters.categories.length ? filters.categories : undefined,
-      languages: filters.languages.length ? filters.languages : undefined,
     },
     { initialNumItems: 48 }
   );
@@ -85,15 +83,6 @@ function HomeContent() {
     [countriesData]
   );
 
-  const languageOptions = useMemo(
-    () =>
-      languagesData.map((l) => ({
-        id: l.code,
-        label: l.name,
-      })),
-    [languagesData]
-  );
-
   const countryFlags = useMemo(
     () =>
       countriesData.reduce(
@@ -126,7 +115,7 @@ function HomeContent() {
   // Build filter chips
   const filterChips = useMemo(() => {
     const chips: Array<{
-      type: "category" | "country" | "language";
+      type: "category" | "country";
       id: string;
       label: string;
       icon?: string;
@@ -143,18 +132,12 @@ function HomeContent() {
         chips.push({ type: "country", id, label: country.name, icon: country.flag });
     });
 
-    filters.languages.forEach((id) => {
-      const lang = languagesData.find((l) => l.code === id);
-      if (lang) chips.push({ type: "language", id, label: lang.name });
-    });
-
     return chips;
-  }, [filters, categoriesData, countriesData, languagesData]);
+  }, [filters, categoriesData, countriesData]);
 
   const activeFilterCount =
     filters.categories.length +
     filters.countries.length +
-    filters.languages.length +
     (filters.search ? 1 : 0);
 
   // Handlers
@@ -171,18 +154,14 @@ function HomeContent() {
   }, [updateFilters]);
 
   const handleRemoveChip = useCallback(
-    (type: "category" | "country" | "language", id: string) => {
+    (type: "category" | "country", id: string) => {
       if (type === "category") {
         updateFilters({
           categories: filters.categories.filter((c) => c !== id),
         });
-      } else if (type === "country") {
-        updateFilters({
-          countries: filters.countries.filter((c) => c !== id),
-        });
       } else {
         updateFilters({
-          languages: filters.languages.filter((l) => l !== id),
+          countries: filters.countries.filter((c) => c !== id),
         });
       }
     },
@@ -219,9 +198,6 @@ function HomeContent() {
         countries={countryOptions}
         selectedCountries={filters.countries}
         onCountriesChange={(countries) => updateFilters({ countries })}
-        languages={languageOptions}
-        selectedLanguages={filters.languages}
-        onLanguagesChange={(languages) => updateFilters({ languages })}
         showFavorites={showFavorites}
         onShowFavoritesChange={handleShowFavorites}
         showHistory={showHistory}
@@ -241,9 +217,6 @@ function HomeContent() {
           countries={countryOptions}
           selectedCountries={filters.countries}
           onCountriesChange={(countries) => updateFilters({ countries })}
-          languages={languageOptions}
-          selectedLanguages={filters.languages}
-          onLanguagesChange={(languages) => updateFilters({ languages })}
           showFavorites={showFavorites}
           onShowFavoritesChange={handleShowFavorites}
           showHistory={showHistory}

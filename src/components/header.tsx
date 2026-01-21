@@ -21,9 +21,6 @@ interface HeaderProps {
   countries: FilterOption[];
   selectedCountries: string[];
   onCountriesChange: (selected: string[]) => void;
-  languages: FilterOption[];
-  selectedLanguages: string[];
-  onLanguagesChange: (selected: string[]) => void;
   showFavorites: boolean;
   onShowFavoritesChange: (show: boolean) => void;
   showHistory: boolean;
@@ -52,9 +49,6 @@ export function Header(props: HeaderProps) {
               countries={props.countries}
               selectedCountries={props.selectedCountries}
               onCountriesChange={props.onCountriesChange}
-              languages={props.languages}
-              selectedLanguages={props.selectedLanguages}
-              onLanguagesChange={props.onLanguagesChange}
               showFavorites={props.showFavorites}
               onShowFavoritesChange={props.onShowFavoritesChange}
               showHistory={props.showHistory}
