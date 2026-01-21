@@ -8,13 +8,25 @@
  * @module
  */
 
+import type * as categories from "../categories.js";
+import type * as channels from "../channels.js";
+import type * as countries from "../countries.js";
+import type * as languages from "../languages.js";
+import type * as streams from "../streams.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  categories: typeof categories;
+  channels: typeof channels;
+  countries: typeof countries;
+  languages: typeof languages;
+  streams: typeof streams;
+}>;
 
 /**
  * A utility for referencing Convex functions in your app's public API.
