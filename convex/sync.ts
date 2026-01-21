@@ -3,6 +3,84 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 
 const API_BASE = "https://iptv-org.github.io/api";
+const LOGOS_URL = "https://raw.githubusercontent.com/iptv-org/database/master/data/logos.csv";
+
+// Parse a CSV line handling quoted fields
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (const char of line) {
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === "," && !inQuotes) {
+      result.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+// Calculate score for logo selection (higher = better)
+function calculateLogoScore(
+  feed: string,
+  tags: string,
+  width: string,
+  height: string,
+  format: string
+): number {
+  let score = 0;
+
+  // Prefer no feed (main logo)
+  if (!feed) score += 1000;
+
+  // Prefer larger images
+  const size = (parseInt(width) || 0) * (parseInt(height) || 0);
+  score += Math.min(size / 1000, 500);
+
+  // Prefer color over picons
+  if (tags?.includes("color")) score += 100;
+  if (tags?.includes("picons")) score -= 50;
+
+  // Prefer PNG > JPEG > SVG
+  if (format === "PNG") score += 50;
+  else if (format === "JPEG") score += 30;
+  else if (format === "SVG") score += 20;
+
+  return score;
+}
+
+// Parse logos CSV and return map of channelId -> best logo URL
+function parseLogosCSV(csv: string): Map<string, string> {
+  const lines = csv.split("\n");
+  const logoMap = new Map<string, { url: string; score: number }>();
+
+  // Skip header row
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const values = parseCSVLine(line);
+    if (values.length < 7) continue;
+
+    const [channel, feed, tags, width, height, format, url] = values;
+    if (!channel || !url) continue;
+
+    const score = calculateLogoScore(feed, tags, width, height, format);
+
+    const existing = logoMap.get(channel);
+    if (!existing || score > existing.score) {
+      logoMap.set(channel, { url, score });
+    }
+  }
+
+  // Convert to simple channelId -> url map
+  return new Map([...logoMap].map(([k, v]) => [k, v.url]));
+}
 
 export const syncAll = internalAction({
   args: {},
@@ -10,24 +88,30 @@ export const syncAll = internalAction({
     console.log("Starting IPTV data sync...");
 
     try {
-      // Fetch all data in parallel
-      const [channelsRes, streamsRes, categoriesRes, countriesRes, languagesRes] =
+      // Fetch all data in parallel (including logos CSV)
+      const [channelsRes, streamsRes, categoriesRes, countriesRes, languagesRes, logosRes] =
         await Promise.all([
           fetch(`${API_BASE}/channels.json`),
           fetch(`${API_BASE}/streams.json`),
           fetch(`${API_BASE}/categories.json`),
           fetch(`${API_BASE}/countries.json`),
           fetch(`${API_BASE}/languages.json`),
+          fetch(LOGOS_URL),
         ]);
 
-      const [channels, streams, categories, countries, languages] =
+      const [channels, streams, categories, countries, languages, logosCSV] =
         await Promise.all([
           channelsRes.json(),
           streamsRes.json(),
           categoriesRes.json(),
           countriesRes.json(),
           languagesRes.json(),
+          logosRes.text(),
         ]);
+
+      // Parse logos CSV into a map
+      const logoMap = parseLogosCSV(logosCSV);
+      console.log(`Parsed ${logoMap.size} channel logos`);
 
       // Filter out NSFW and closed channels
       const safeChannels = channels.filter(
@@ -83,10 +167,10 @@ export const syncAll = internalAction({
           channels: batch.map((c: any) => ({
             channelId: c.id,
             name: c.name,
-            logo: undefined, // Logo is in separate logos.json, not included in MVP
+            logo: logoMap.get(c.id) || undefined,
             country: c.country,
             categories: c.categories || [],
-            languages: [], // Languages not in channels.json
+            languages: [],
             network: c.network || undefined,
           })),
         });
