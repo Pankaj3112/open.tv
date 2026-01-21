@@ -73,12 +73,12 @@ export function FilterSection({
             </div>
           )}
 
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-36 overflow-y-auto">
             <div className="space-y-1">
               {filteredOptions.map((option) => (
                 <label
                   key={option.id}
-                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent min-w-0"
+                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent overflow-hidden"
                 >
                   <Checkbox
                     checked={selected.includes(option.id)}
@@ -86,7 +86,7 @@ export function FilterSection({
                     className="shrink-0"
                   />
                   {option.icon && <span className="shrink-0">{option.icon}</span>}
-                  <span className="truncate">{option.label}</span>
+                  <span className="truncate flex-1">{option.label}</span>
                   {option.count !== undefined && (
                     <span className="text-xs text-muted-foreground shrink-0">
                       ({option.count})
