@@ -31,16 +31,10 @@ export function FilterSection({
 }: FilterSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [search, setSearch] = useState("");
-  const [showAll, setShowAll] = useState(false);
 
   const filteredOptions = options.filter((opt) =>
     opt.label.toLowerCase().includes(search.toLowerCase())
   );
-
-  const displayOptions = showAll
-    ? filteredOptions
-    : filteredOptions.slice(0, 10);
-  const hasMore = filteredOptions.length > 10;
 
   const toggleOption = (id: string) => {
     if (selected.includes(id)) {
@@ -79,9 +73,9 @@ export function FilterSection({
             </div>
           )}
 
-          <div className="max-h-48 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             <div className="space-y-1">
-              {displayOptions.map((option) => (
+              {filteredOptions.map((option) => (
                 <label
                   key={option.id}
                   className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent min-w-0"
@@ -102,15 +96,6 @@ export function FilterSection({
               ))}
             </div>
           </div>
-
-          {hasMore && !showAll && (
-            <button
-              onClick={() => setShowAll(true)}
-              className="w-full text-center text-xs text-muted-foreground hover:text-foreground"
-            >
-              Show {filteredOptions.length - 10} more...
-            </button>
-          )}
         </div>
       )}
     </div>
