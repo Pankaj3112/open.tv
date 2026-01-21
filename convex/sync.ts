@@ -29,14 +29,22 @@ export const syncAll = internalAction({
           languagesRes.json(),
         ]);
 
-      // Filter out NSFW channels
+      // Filter out NSFW and closed channels
       const safeChannels = channels.filter(
-        (c: any) => !c.is_nsfw && !c.closed
+        (c: any) => !c.is_nsfw && !c.closed && c.id && c.country
       );
 
-      console.log(`Fetched ${safeChannels.length} safe channels`);
+      // Filter out streams with no channel reference
+      const validStreams = streams.filter(
+        (s: any) => s.channel && s.url
+      );
 
-      // Sync each data type
+      console.log(`Fetched ${safeChannels.length} safe channels, ${validStreams.length} valid streams`);
+
+      // Sync each data type in batches to avoid read limits
+      const BATCH_SIZE = 100;
+
+      // Categories (usually ~30, so one batch is fine)
       await ctx.runMutation(internal.sync.upsertCategories, {
         categories: categories.map((c: any) => ({
           categoryId: c.id,
@@ -44,42 +52,49 @@ export const syncAll = internalAction({
         })),
       });
 
-      await ctx.runMutation(internal.sync.upsertCountries, {
-        countries: countries.map((c: any) => ({
-          code: c.code,
-          name: c.name,
-          flag: c.flag || "",
-          languages: c.languages || [],
-        })),
-      });
+      // Countries in batches
+      for (let i = 0; i < countries.length; i += BATCH_SIZE) {
+        const batch = countries.slice(i, i + BATCH_SIZE);
+        await ctx.runMutation(internal.sync.upsertCountriesBatch, {
+          countries: batch.map((c: any) => ({
+            code: c.code,
+            name: c.name,
+            flag: c.flag || "",
+            languages: c.languages || [],
+          })),
+        });
+      }
 
-      await ctx.runMutation(internal.sync.upsertLanguages, {
-        languages: languages.map((l: any) => ({
-          code: l.code,
-          name: l.name,
-        })),
-      });
+      // Languages in batches
+      for (let i = 0; i < languages.length; i += BATCH_SIZE) {
+        const batch = languages.slice(i, i + BATCH_SIZE);
+        await ctx.runMutation(internal.sync.upsertLanguagesBatch, {
+          languages: batch.map((l: any) => ({
+            code: l.code,
+            name: l.name,
+          })),
+        });
+      }
 
       // Sync channels in batches
-      const BATCH_SIZE = 100;
       for (let i = 0; i < safeChannels.length; i += BATCH_SIZE) {
         const batch = safeChannels.slice(i, i + BATCH_SIZE);
         await ctx.runMutation(internal.sync.upsertChannelsBatch, {
           channels: batch.map((c: any) => ({
             channelId: c.id,
             name: c.name,
-            logo: c.logo || undefined,
+            logo: undefined, // Logo is in separate logos.json, not included in MVP
             country: c.country,
             categories: c.categories || [],
-            languages: c.languages || [],
+            languages: [], // Languages not in channels.json
             network: c.network || undefined,
           })),
         });
       }
 
       // Sync streams in batches
-      for (let i = 0; i < streams.length; i += BATCH_SIZE) {
-        const batch = streams.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < validStreams.length; i += BATCH_SIZE) {
+        const batch = validStreams.slice(i, i + BATCH_SIZE);
         await ctx.runMutation(internal.sync.upsertStreamsBatch, {
           streams: batch.map((s: any) => ({
             channelId: s.channel,
@@ -133,7 +148,7 @@ export const upsertCategories = internalMutation({
   },
 });
 
-export const upsertCountries = internalMutation({
+export const upsertCountriesBatch = internalMutation({
   args: {
     countries: v.array(
       v.object({
@@ -160,7 +175,7 @@ export const upsertCountries = internalMutation({
   },
 });
 
-export const upsertLanguages = internalMutation({
+export const upsertLanguagesBatch = internalMutation({
   args: {
     languages: v.array(
       v.object({
