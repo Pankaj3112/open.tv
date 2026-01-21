@@ -45,7 +45,7 @@ export function FilterSection({
   };
 
   return (
-    <div className="border-b border-border pb-3">
+    <div className="border-b border-border pb-3 overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between py-2 text-sm font-medium hover:text-foreground/80"
@@ -73,12 +73,12 @@ export function FilterSection({
             </div>
           )}
 
-          <div className="max-h-36 overflow-y-auto">
+          <div className="max-h-36 overflow-y-auto overflow-x-hidden">
             <div className="space-y-1">
               {filteredOptions.map((option) => (
                 <label
                   key={option.id}
-                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent"
+                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent max-w-full"
                 >
                   <Checkbox
                     checked={selected.includes(option.id)}
@@ -86,12 +86,7 @@ export function FilterSection({
                     className="shrink-0"
                   />
                   {option.icon && <span className="shrink-0">{option.icon}</span>}
-                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                  {option.count !== undefined && (
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      ({option.count})
-                    </span>
-                  )}
+                  <span className="overflow-hidden text-ellipsis whitespace-nowrap">{option.label}</span>
                 </label>
               ))}
             </div>

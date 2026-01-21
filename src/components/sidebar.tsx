@@ -2,7 +2,6 @@
 
 import { SearchInput } from "./search-input";
 import { FilterSection } from "./filter-section";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Heart, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -54,7 +53,7 @@ export function Sidebar({
         />
       </div>
 
-      <ScrollArea className="flex-1 px-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4">
         <FilterSection
           title="Categories"
           options={categories}
@@ -102,7 +101,7 @@ export function Sidebar({
             </button>
           </div>
         </div>
-      </ScrollArea>
+      </div>
     </aside>
   );
 }
