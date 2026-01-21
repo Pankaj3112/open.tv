@@ -18,7 +18,8 @@ interface VideoPlayerProps {
 
 export function VideoPlayer({ channelName, stream, onClose }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const playerRef = useRef<any>(null);
+   
+  const playerRef = useRef<{ destroy: () => Promise<void> } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -50,8 +51,8 @@ export function VideoPlayer({ channelName, stream, onClose }: VideoPlayerProps) 
       await player.attach(videoRef.current);
       playerRef.current = player;
 
-      player.addEventListener("error", (event: any) => {
-        console.error("Shaka error:", event.detail);
+      player.addEventListener("error", (event) => {
+        console.error("Shaka error:", event);
         setError("Stream unavailable");
         setLoading(false);
       });
@@ -83,6 +84,7 @@ export function VideoPlayer({ channelName, stream, onClose }: VideoPlayerProps) 
         playerRef.current.destroy();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stream?.url]);
 
   return (

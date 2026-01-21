@@ -2,8 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { useCallback, useState } from "react";
-import { debounce } from "@/lib/utils";
+import { useMemo, useState, useRef, useEffect } from "react";
 
 interface SearchInputProps {
   value: string;
@@ -17,17 +16,40 @@ export function SearchInput({
   placeholder = "Search channels...",
 }: SearchInputProps) {
   const [localValue, setLocalValue] = useState(value);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onChangeRef = useRef(onChange);
 
-  const debouncedOnChange = useCallback(
-    debounce((val: string) => onChange(val), 300),
-    [onChange]
+  // Keep ref updated
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  const handleChange = useMemo(
+    () => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value;
+      setLocalValue(newValue);
+
+      // Clear previous timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Set new debounced call
+      timeoutRef.current = setTimeout(() => {
+        onChangeRef.current(newValue);
+      }, 300);
+    },
+    []
   );
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setLocalValue(newValue);
-    debouncedOnChange(newValue);
-  };
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="relative">

@@ -5,6 +5,42 @@ import { internal } from "./_generated/api";
 const API_BASE = "https://iptv-org.github.io/api";
 const LOGOS_URL = "https://raw.githubusercontent.com/iptv-org/database/master/data/logos.csv";
 
+// API response types
+interface ApiChannel {
+  id: string;
+  name: string;
+  country: string;
+  categories?: string[];
+  network?: string;
+  is_nsfw?: boolean;
+  closed?: string;
+}
+
+interface ApiStream {
+  channel: string;
+  url: string;
+  quality?: string;
+  http_referrer?: string;
+  user_agent?: string;
+}
+
+interface ApiCategory {
+  id: string;
+  name: string;
+}
+
+interface ApiCountry {
+  code: string;
+  name: string;
+  flag?: string;
+  languages?: string[];
+}
+
+interface ApiLanguage {
+  code: string;
+  name: string;
+}
+
 // Parse a CSV line handling quoted fields
 function parseCSVLine(line: string): string[] {
   const result: string[] = [];
@@ -114,13 +150,13 @@ export const syncAll = internalAction({
       console.log(`Parsed ${logoMap.size} channel logos`);
 
       // Filter out NSFW and closed channels
-      const safeChannels = channels.filter(
-        (c: any) => !c.is_nsfw && !c.closed && c.id && c.country
+      const safeChannels = (channels as ApiChannel[]).filter(
+        (c) => !c.is_nsfw && !c.closed && c.id && c.country
       );
 
       // Filter out streams with no channel reference
-      const validStreams = streams.filter(
-        (s: any) => s.channel && s.url
+      const validStreams = (streams as ApiStream[]).filter(
+        (s) => s.channel && s.url
       );
 
       console.log(`Fetched ${safeChannels.length} safe channels, ${validStreams.length} valid streams`);
@@ -130,17 +166,18 @@ export const syncAll = internalAction({
 
       // Categories (usually ~30, so one batch is fine)
       await ctx.runMutation(internal.sync.upsertCategories, {
-        categories: categories.map((c: any) => ({
+        categories: (categories as ApiCategory[]).map((c) => ({
           categoryId: c.id,
           name: c.name,
         })),
       });
 
       // Countries in batches
-      for (let i = 0; i < countries.length; i += BATCH_SIZE) {
-        const batch = countries.slice(i, i + BATCH_SIZE);
+      const typedCountries = countries as ApiCountry[];
+      for (let i = 0; i < typedCountries.length; i += BATCH_SIZE) {
+        const batch = typedCountries.slice(i, i + BATCH_SIZE);
         await ctx.runMutation(internal.sync.upsertCountriesBatch, {
-          countries: batch.map((c: any) => ({
+          countries: batch.map((c) => ({
             code: c.code,
             name: c.name,
             flag: c.flag || "",
@@ -150,10 +187,11 @@ export const syncAll = internalAction({
       }
 
       // Languages in batches
-      for (let i = 0; i < languages.length; i += BATCH_SIZE) {
-        const batch = languages.slice(i, i + BATCH_SIZE);
+      const typedLanguages = languages as ApiLanguage[];
+      for (let i = 0; i < typedLanguages.length; i += BATCH_SIZE) {
+        const batch = typedLanguages.slice(i, i + BATCH_SIZE);
         await ctx.runMutation(internal.sync.upsertLanguagesBatch, {
-          languages: batch.map((l: any) => ({
+          languages: batch.map((l) => ({
             code: l.code,
             name: l.name,
           })),
@@ -164,7 +202,7 @@ export const syncAll = internalAction({
       for (let i = 0; i < safeChannels.length; i += BATCH_SIZE) {
         const batch = safeChannels.slice(i, i + BATCH_SIZE);
         await ctx.runMutation(internal.sync.upsertChannelsBatch, {
-          channels: batch.map((c: any) => ({
+          channels: batch.map((c) => ({
             channelId: c.id,
             name: c.name,
             logo: logoMap.get(c.id) || undefined,
@@ -180,7 +218,7 @@ export const syncAll = internalAction({
       for (let i = 0; i < validStreams.length; i += BATCH_SIZE) {
         const batch = validStreams.slice(i, i + BATCH_SIZE);
         await ctx.runMutation(internal.sync.upsertStreamsBatch, {
-          streams: batch.map((s: any) => ({
+          streams: batch.map((s) => ({
             channelId: s.channel,
             url: s.url,
             quality: s.quality || undefined,

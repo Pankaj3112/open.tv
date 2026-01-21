@@ -76,19 +76,24 @@ export const list = query({
   },
 });
 
-function filterChannels(
-  channels: any[],
+interface ChannelFields {
+  country: string;
+  categories: string[];
+}
+
+function filterChannels<T extends ChannelFields>(
+  channels: T[],
   args: {
     countries?: string[];
     categories?: string[];
   }
-) {
+): T[] {
   return channels.filter((channel) => {
     if (args.countries?.length) {
       if (!args.countries.includes(channel.country)) return false;
     }
     if (args.categories?.length) {
-      if (!channel.categories.some((c: string) => args.categories!.includes(c)))
+      if (!channel.categories.some((c) => args.categories!.includes(c)))
         return false;
     }
     return true;

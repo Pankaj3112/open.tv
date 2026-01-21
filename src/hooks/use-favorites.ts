@@ -4,20 +4,20 @@ import { useCallback, useEffect, useState } from "react";
 
 const STORAGE_KEY = "iptv-favorites";
 
-export function useFavorites() {
-  const [favorites, setFavorites] = useState<string[]>([]);
-
-  // Load from localStorage on mount
-  useEffect(() => {
+// Helper to safely get from localStorage (only on client)
+function getStoredFavorites(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setFavorites(JSON.parse(stored));
-      } catch {
-        setFavorites([]);
-      }
-    }
-  }, []);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function useFavorites() {
+  // Use lazy initialization to load from localStorage
+  const [favorites, setFavorites] = useState<string[]>(getStoredFavorites);
 
   // Save to localStorage when favorites change
   useEffect(() => {

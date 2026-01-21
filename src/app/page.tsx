@@ -39,8 +39,16 @@ function HomeContent() {
       : "browse";
 
   // Fetch reference data
-  const categoriesData = useQuery(api.categories.list) ?? [];
-  const countriesData = useQuery(api.countries.list) ?? [];
+  const categoriesQuery = useQuery(api.categories.list);
+  const countriesQuery = useQuery(api.countries.list);
+  const categoriesData = useMemo(
+    () => categoriesQuery ?? [],
+    [categoriesQuery]
+  );
+  const countriesData = useMemo(
+    () => countriesQuery ?? [],
+    [countriesQuery]
+  );
 
   // Fetch channels with pagination
   const {
@@ -115,6 +123,12 @@ function HomeContent() {
     [countriesData],
   );
 
+  // Compute time cutoffs for history filter
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  const oneDayAgo = now - 24 * 60 * 60 * 1000;
+  const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
+
   // Determine which channels to display
   const displayChannels = useMemo(() => {
     if (showFavorites) {
@@ -129,7 +143,7 @@ function HomeContent() {
       }
 
       // Filter out nulls first
-      let filtered = favoriteChannels.filter(
+      const filtered = favoriteChannels.filter(
         (ch): ch is NonNullable<typeof ch> => ch !== null,
       );
 
@@ -185,10 +199,6 @@ function HomeContent() {
       );
 
       // Apply time filter
-      const now = Date.now();
-      const oneDayAgo = now - 24 * 60 * 60 * 1000;
-      const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
-
       const filteredHistoryEntries = history.filter((entry) => {
         if (historyTimeFilter === "today") return entry.timestamp >= oneDayAgo;
         if (historyTimeFilter === "week") return entry.timestamp >= oneWeekAgo;
@@ -230,6 +240,8 @@ function HomeContent() {
     favorites,
     history,
     historyTimeFilter,
+    oneDayAgo,
+    oneWeekAgo,
   ]);
 
 

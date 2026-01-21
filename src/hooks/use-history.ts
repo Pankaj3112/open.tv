@@ -10,20 +10,20 @@ interface HistoryEntry {
   timestamp: number;
 }
 
-export function useHistory() {
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-
-  // Load from localStorage on mount
-  useEffect(() => {
+// Helper to safely get from localStorage (only on client)
+function getStoredHistory(): HistoryEntry[] {
+  if (typeof window === "undefined") return [];
+  try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setHistory(JSON.parse(stored));
-      } catch {
-        setHistory([]);
-      }
-    }
-  }, []);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function useHistory() {
+  // Use lazy initialization to load from localStorage
+  const [history, setHistory] = useState<HistoryEntry[]>(getStoredHistory);
 
   // Save to localStorage when history changes
   useEffect(() => {
