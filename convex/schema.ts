@@ -13,6 +13,7 @@ export default defineSchema({
   })
     .index("by_channelId", ["channelId"])
     .index("by_country", ["country"])
+    .index("by_country_name", ["country", "name"])
     .searchIndex("search_name", { searchField: "name" }),
 
   streams: defineTable({
