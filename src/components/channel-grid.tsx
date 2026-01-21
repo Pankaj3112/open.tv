@@ -11,7 +11,7 @@ interface Channel {
   name: string;
   logo?: string;
   country: string;
-  categories: string[];
+  category: string;
 }
 
 interface ChannelGridProps {

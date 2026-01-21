@@ -7,13 +7,15 @@ export default defineSchema({
     name: v.string(),
     logo: v.optional(v.string()),
     country: v.string(),
-    categories: v.array(v.string()),
+    category: v.string(),
     languages: v.array(v.string()),
     network: v.optional(v.string()),
   })
     .index("by_channelId", ["channelId"])
     .index("by_country", ["country"])
     .index("by_country_name", ["country", "name"])
+    .index("by_category", ["category"])
+    .index("by_category_country", ["category", "country"])
     .searchIndex("search_name", { searchField: "name" }),
 
   streams: defineTable({

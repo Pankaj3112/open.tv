@@ -11,7 +11,7 @@ interface Channel {
   name: string;
   logo?: string;
   country: string;
-  categories: string[];
+  category: string;
 }
 
 interface ChannelCardProps {
@@ -64,9 +64,9 @@ export function ChannelCard({
           <h3 className="truncate font-medium text-sm">{channel.name}</h3>
           <div className="flex items-center gap-1 mt-1">
             {countryFlag && <span className="text-lg">{countryFlag}</span>}
-            {channel.categories[0] && (
+            {channel.category && (
               <Badge variant="secondary" className="text-xs capitalize">
-                {channel.categories[0]}
+                {channel.category}
               </Badge>
             )}
           </div>

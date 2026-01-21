@@ -8,97 +8,117 @@ export const list = query({
   args: {
     countries: v.optional(v.array(v.string())),
     categories: v.optional(v.array(v.string())),
-    search: v.optional(v.string()),
+    nameSearch: v.optional(v.string()),
+    search: v.optional(v.string()), // Alias for nameSearch for backwards compatibility
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const hasCountryFilter = args.countries && args.countries.length > 0;
-    const hasCategoryFilter = args.categories && args.categories.length > 0;
-    const hasSearch = args.search && args.search.trim();
+    const { countries, categories, paginationOpts } = args;
+    const nameSearch = args.nameSearch || args.search;
 
-    // If search is provided, use search index
-    if (hasSearch) {
+    const hasCountryFilter = countries && countries.length > 0;
+    const hasCategoryFilter = categories && categories.length > 0;
+
+    // Text search path - use search index with post-filtering
+    if (nameSearch) {
       const results = await ctx.db
         .query("channels")
-        .withSearchIndex("search_name", (q) => q.search("name", args.search!))
-        .take(args.paginationOpts.numItems);
+        .withSearchIndex("search_name", (q) => q.search("name", nameSearch))
+        .paginate(paginationOpts);
 
-      // Apply filters to search results
-      const filtered = filterChannels(results, args);
       return {
-        page: filtered,
-        isDone: true,
-        continueCursor: "",
+        ...results,
+        page: results.page.filter((ch) => {
+          const matchesCountry = !hasCountryFilter || countries.includes(ch.country);
+          const matchesCategory = !hasCategoryFilter || categories.includes(ch.category);
+          return matchesCountry && matchesCategory;
+        }),
       };
     }
 
-    // Country filter: use streams for proper pagination
-    if (hasCountryFilter) {
-      const countries = args.countries!;
+    // Single category + single country = compound index (fastest)
+    if (categories?.length === 1 && countries?.length === 1) {
+      return ctx.db
+        .query("channels")
+        .withIndex("by_category_country", (q) =>
+          q.eq("category", categories[0]).eq("country", countries[0])
+        )
+        .paginate(paginationOpts);
+    }
 
-      // Create a stream for each country using the index
+    // Single category + multiple countries = use category index with country filter
+    if (categories?.length === 1 && hasCountryFilter) {
+      const channelStream = stream(ctx.db, schema)
+        .query("channels")
+        .withIndex("by_category", (q) => q.eq("category", categories[0]))
+        .filterWith(async (channel) => countries.includes(channel.country));
+
+      return channelStream.paginate(paginationOpts);
+    }
+
+    // Single category, no country filter
+    if (categories?.length === 1) {
+      return stream(ctx.db, schema)
+        .query("channels")
+        .withIndex("by_category", (q) => q.eq("category", categories[0]))
+        .paginate(paginationOpts);
+    }
+
+    // Country filter with multiple categories
+    if (hasCountryFilter && hasCategoryFilter) {
       const countryStreams = countries.map((country) =>
         stream(ctx.db, schema)
           .query("channels")
           .withIndex("by_country", (q) => q.eq("country", country))
       );
 
-      // Merge all country streams - ordered by _creationTime (default)
-      let channelStream =
+      const channelStream =
         countryStreams.length === 1
           ? countryStreams[0]
           : mergedStream(countryStreams, ["_creationTime"]);
 
-      // Apply category filter if needed
-      if (hasCategoryFilter) {
-        channelStream = channelStream.filterWith(async (channel) =>
-          channel.categories.some((c) => args.categories!.includes(c))
-        );
-      }
-
-      // Paginate the merged stream
-      return await channelStream.paginate(args.paginationOpts);
+      return channelStream
+        .filterWith(async (channel) => categories.includes(channel.category))
+        .paginate(paginationOpts);
     }
 
-    // Category filter only (no country filter)
-    if (hasCategoryFilter) {
-      const channelStream = stream(ctx.db, schema)
-        .query("channels")
-        .filterWith(async (channel) =>
-          channel.categories.some((c) => args.categories!.includes(c))
-        );
+    // Country filter only (no category filter)
+    if (hasCountryFilter) {
+      const countryStreams = countries.map((country) =>
+        stream(ctx.db, schema)
+          .query("channels")
+          .withIndex("by_country", (q) => q.eq("country", country))
+      );
 
-      return await channelStream.paginate(args.paginationOpts);
+      const channelStream =
+        countryStreams.length === 1
+          ? countryStreams[0]
+          : mergedStream(countryStreams, ["_creationTime"]);
+
+      return channelStream.paginate(paginationOpts);
+    }
+
+    // Multiple categories, no country filter
+    // Use by_category index (orders by [category, _creationTime]) so mergedStream works
+    if (hasCategoryFilter) {
+      const categoryStreams = categories.map((category) =>
+        stream(ctx.db, schema)
+          .query("channels")
+          .withIndex("by_category", (q) => q.eq("category", category))
+      );
+
+      const channelStream =
+        categoryStreams.length === 1
+          ? categoryStreams[0]
+          : mergedStream(categoryStreams, ["_creationTime"]);
+
+      return channelStream.paginate(paginationOpts);
     }
 
     // No filters - use standard pagination
-    return await ctx.db.query("channels").paginate(args.paginationOpts);
+    return ctx.db.query("channels").paginate(paginationOpts);
   },
 });
-
-interface ChannelFields {
-  country: string;
-  categories: string[];
-}
-
-function filterChannels<T extends ChannelFields>(
-  channels: T[],
-  args: {
-    countries?: string[];
-    categories?: string[];
-  }
-): T[] {
-  return channels.filter((channel) => {
-    if (args.countries?.length) {
-      if (!args.countries.includes(channel.country)) return false;
-    }
-    if (args.categories?.length) {
-      if (!channel.categories.some((c) => args.categories!.includes(c)))
-        return false;
-    }
-    return true;
-  });
-}
 
 export const getById = query({
   args: { channelId: v.string() },
@@ -124,4 +144,3 @@ export const getByIds = query({
     return channels.filter(Boolean);
   },
 });
-

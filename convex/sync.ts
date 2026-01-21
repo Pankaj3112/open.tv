@@ -207,7 +207,7 @@ export const syncAll = internalAction({
             name: c.name,
             logo: logoMap.get(c.id) || undefined,
             country: c.country,
-            categories: c.categories || [],
+            category: c.categories?.[0] || "general",
             languages: [],
             network: c.network || undefined,
           })),
@@ -330,7 +330,7 @@ export const upsertChannelsBatch = internalMutation({
         name: v.string(),
         logo: v.optional(v.string()),
         country: v.string(),
-        categories: v.array(v.string()),
+        category: v.string(),
         languages: v.array(v.string()),
         network: v.optional(v.string()),
       })
