@@ -1,6 +1,7 @@
 "use client";
 
 import { ChannelCard } from "./channel-card";
+import { EmptyState } from "./empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useRef } from "react";
 
@@ -23,6 +24,7 @@ interface ChannelGridProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   isLoading?: boolean;
+  mode?: "browse" | "favorites" | "history";
 }
 
 export function ChannelGrid({
@@ -35,6 +37,7 @@ export function ChannelGrid({
   onLoadMore,
   hasMore,
   isLoading,
+  mode = "browse",
 }: ChannelGridProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -73,14 +76,7 @@ export function ChannelGrid({
   }
 
   if (!isLoading && channels.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-lg text-muted-foreground">No channels found</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Try adjusting your filters or search query
-        </p>
-      </div>
-    );
+    return <EmptyState mode={mode} />;
   }
 
   return (

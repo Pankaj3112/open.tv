@@ -49,11 +49,16 @@ export function useFavorites() {
     [favorites]
   );
 
+  const clearFavorites = useCallback(() => {
+    setFavorites([]);
+  }, []);
+
   return {
     favorites,
     addFavorite,
     removeFavorite,
     toggleFavorite,
     isFavorite,
+    clearFavorites,
   };
 }

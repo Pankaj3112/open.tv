@@ -2,7 +2,7 @@
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, ChevronRight, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useState } from "react";
 
 interface FilterOption {
@@ -18,7 +18,6 @@ interface FilterSectionProps {
   selected: string[];
   onChange: (selected: string[]) => void;
   searchable?: boolean;
-  defaultExpanded?: boolean;
 }
 
 export function FilterSection({
@@ -27,9 +26,7 @@ export function FilterSection({
   selected,
   onChange,
   searchable = false,
-  defaultExpanded = true,
 }: FilterSectionProps) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
   const [search, setSearch] = useState("");
 
   const filteredOptions = options.filter((opt) =>
@@ -45,23 +42,12 @@ export function FilterSection({
   };
 
   return (
-    <div className="border-b border-border pb-3 overflow-hidden">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center justify-between py-2 text-sm font-medium hover:text-foreground/80"
-      >
-        <span>{title}</span>
-        {expanded ? (
-          <ChevronDown className="h-4 w-4" />
-        ) : (
-          <ChevronRight className="h-4 w-4" />
-        )}
-      </button>
+    <div className="border-b border-border pb-3 overflow-hidden flex flex-col h-full">
+      <div className="py-2 text-sm font-medium shrink-0">{title}</div>
 
-      {expanded && (
-        <div className="mt-2 space-y-2">
+      <div className="space-y-2 flex-1 flex flex-col min-h-0">
           {searchable && (
-            <div className="relative">
+            <div className="relative shrink-0">
               <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
@@ -73,7 +59,7 @@ export function FilterSection({
             </div>
           )}
 
-          <div className="max-h-36 overflow-y-auto overflow-x-hidden">
+          <div className="overflow-y-auto overflow-x-hidden flex-1">
             <div className="space-y-1">
               {filteredOptions.map((option) => (
                 <label
@@ -92,7 +78,6 @@ export function FilterSection({
             </div>
           </div>
         </div>
-      )}
     </div>
   );
 }
