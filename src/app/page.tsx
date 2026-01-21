@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/sidebar";
 import { ChannelGrid } from "@/components/channel-grid";
 import { VideoPlayer } from "@/components/video-player";
 import { FilterChips } from "@/components/filter-chips";
+import { Footer } from "@/components/footer";
 import { useFilters } from "@/hooks/use-filters";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useHistory } from "@/hooks/use-history";
@@ -274,6 +275,8 @@ function HomeContent() {
           />
         </main>
       </div>
+
+      <Footer />
     </div>
   );
 }
