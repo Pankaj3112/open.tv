@@ -2,7 +2,6 @@
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { useState } from "react";
 
@@ -80,8 +79,8 @@ export function FilterSection({
             </div>
           )}
 
-          <ScrollArea className="max-h-48">
-            <div className="space-y-1 pr-4">
+          <div className="max-h-48 overflow-y-auto">
+            <div className="space-y-1">
               {displayOptions.map((option) => (
                 <label
                   key={option.id}
@@ -101,7 +100,7 @@ export function FilterSection({
                 </label>
               ))}
             </div>
-          </ScrollArea>
+          </div>
 
           {hasMore && !showAll && (
             <button
