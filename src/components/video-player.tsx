@@ -29,7 +29,8 @@ export function VideoPlayer({ channelName, stream, onClose }: VideoPlayerProps) 
     setLoading(true);
 
     try {
-      const shaka = await import("shaka-player");
+      const shakaModule = await import("shaka-player");
+      const shaka = shakaModule.default;
 
       // Install polyfills
       shaka.polyfill.installAll();

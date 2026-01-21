@@ -21,7 +21,12 @@ export const list = query({
         .take(limit);
 
       // Apply filters to search results
-      return filterChannels(results, args);
+      const filtered = filterChannels(results, args);
+      return {
+        channels: filtered,
+        nextCursor: undefined,
+        totalCount: filtered.length,
+      };
     }
 
     // Otherwise, get all channels with pagination
