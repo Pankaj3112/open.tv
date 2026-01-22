@@ -62,7 +62,7 @@ function HomeContent() {
       countries: filters.countries.length ? filters.countries : undefined,
       categories: filters.categories.length ? filters.categories : undefined,
     },
-    { initialNumItems: 48 },
+    { initialNumItems: 20 },
   );
 
 
@@ -331,7 +331,7 @@ function HomeContent() {
 
   const handleLoadMore = useCallback(() => {
     if (status === "CanLoadMore") {
-      loadMore(48);
+      loadMore(20);
     }
   }, [status, loadMore]);
 
