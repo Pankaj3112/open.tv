@@ -100,12 +100,12 @@ function HomeContent() {
     [countriesData],
   );
 
-  const now = Date.now();
-  const oneDayAgo = now - 24 * 60 * 60 * 1000;
-  const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
-
   // Determine which channels to display
   const displayChannels = useMemo(() => {
+    // eslint-disable-next-line react-hooks/purity
+    const now = Date.now();
+    const oneDayAgo = now - 24 * 60 * 60 * 1000;
+    const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
     if (showFavorites) {
       if (favorites.length === 0) return [];
 
@@ -188,8 +188,6 @@ function HomeContent() {
     favorites,
     history,
     historyTimeFilter,
-    oneDayAgo,
-    oneWeekAgo,
   ]);
 
   const filterChips = useMemo(() => {

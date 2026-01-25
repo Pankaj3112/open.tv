@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 interface Channel {
   channel_id: string;
@@ -10,30 +10,47 @@ interface Channel {
 }
 
 export function useChannelsByIds(channelIds: string[]) {
-  const [channels, setChannels] = useState<Channel[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState<{ channels: Channel[]; isLoading: boolean }>({
+    channels: [],
+    isLoading: false,
+  });
+
+  const idsKey = channelIds.join(',');
 
   useEffect(() => {
     if (channelIds.length === 0) {
-      setChannels([]);
       return;
     }
 
-    setIsLoading(true);
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setData((prev) => ({ ...prev, isLoading: true }));
 
     // Fetch each channel individually and combine
     Promise.all(
       channelIds.map((id) =>
         fetch(`/api/channels/${id}`)
           .then((res) => res.json())
-          .then((data) => (data.error ? null : data))
+          .then((result) => (result.error ? null : result))
           .catch(() => null)
       )
     ).then((results) => {
-      setChannels(results.filter((ch): ch is Channel => ch !== null));
-      setIsLoading(false);
+      if (!cancelled) {
+        setData({
+          channels: results.filter((ch): ch is Channel => ch !== null),
+          isLoading: false,
+        });
+      }
     });
-  }, [channelIds.join(',')]); // Join to create stable dependency
 
-  return { channels, isLoading };
+    return () => {
+      cancelled = true;
+    };
+  }, [idsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const channels = useMemo(() => {
+    return channelIds.length === 0 ? [] : data.channels;
+  }, [channelIds.length, data.channels]);
+
+  return { channels, isLoading: data.isLoading };
 }

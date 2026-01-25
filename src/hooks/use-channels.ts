@@ -34,8 +34,10 @@ export function useChannels(options: UseChannelsOptions) {
 
   // Reset and fetch on filter change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setChannels([]);
     cursorRef.current = null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus('loading');
 
     fetch(buildUrl(0))

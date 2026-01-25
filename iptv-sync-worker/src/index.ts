@@ -96,8 +96,8 @@ function parseLogosCSV(csv: string): Map<string, string> {
   return new Map([...logoMap].map(([k, v]) => [k, v.url]));
 }
 
-export default {
-  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+const worker = {
+  async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext) {
     console.log("Starting IPTV data sync...");
 
     try {
@@ -206,3 +206,5 @@ export default {
     }
   },
 };
+
+export default worker;

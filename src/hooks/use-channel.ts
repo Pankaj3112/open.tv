@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 interface Channel {
   channel_id: string;
@@ -10,27 +10,44 @@ interface Channel {
 }
 
 export function useChannel(channelId: string | null) {
-  const [channel, setChannel] = useState<Channel | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState<{ channel: Channel | null; isLoading: boolean }>({
+    channel: null,
+    isLoading: false,
+  });
 
   useEffect(() => {
     if (!channelId) {
-      setChannel(null);
       return;
     }
 
-    setIsLoading(true);
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setData((prev) => ({ ...prev, isLoading: true }));
+
     fetch(`/api/channels/${channelId}`)
       .then((res) => res.json())
-      .then((data) => {
-        setChannel(data.error ? null : data);
-        setIsLoading(false);
+      .then((result) => {
+        if (!cancelled) {
+          setData({
+            channel: result.error ? null : result,
+            isLoading: false,
+          });
+        }
       })
       .catch(() => {
-        setChannel(null);
-        setIsLoading(false);
+        if (!cancelled) {
+          setData({ channel: null, isLoading: false });
+        }
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [channelId]);
 
-  return { channel, isLoading };
+  const channel = useMemo(() => {
+    return channelId ? data.channel : null;
+  }, [channelId, data.channel]);
+
+  return { channel, isLoading: data.isLoading };
 }

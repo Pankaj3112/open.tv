@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 interface Stream {
   channel_id: string;
@@ -9,27 +9,41 @@ interface Stream {
 }
 
 export function useStreams(channelId: string | null) {
-  const [streams, setStreams] = useState<Stream[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState<{ streams: Stream[]; isLoading: boolean }>({
+    streams: [],
+    isLoading: false,
+  });
 
   useEffect(() => {
     if (!channelId) {
-      setStreams([]);
       return;
     }
 
-    setIsLoading(true);
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setData((prev) => ({ ...prev, isLoading: true }));
+
     fetch(`/api/streams/${channelId}`)
       .then((res) => res.json())
-      .then((data) => {
-        setStreams(data);
-        setIsLoading(false);
+      .then((result) => {
+        if (!cancelled) {
+          setData({ streams: result, isLoading: false });
+        }
       })
       .catch(() => {
-        setStreams([]);
-        setIsLoading(false);
+        if (!cancelled) {
+          setData({ streams: [], isLoading: false });
+        }
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [channelId]);
 
-  return { streams, isLoading };
+  const streams = useMemo(() => {
+    return channelId ? data.streams : [];
+  }, [channelId, data.streams]);
+
+  return { streams, isLoading: data.isLoading };
 }
