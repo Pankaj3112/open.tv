@@ -1,11 +1,26 @@
 name = "iptv-sync-worker"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding = "DB"
 database_name = "iptv-db"
-database_id = "<your-d1-database-id>"
+database_id = "b48a70f7-8280-4d85-9183-952a452a9748"
+
+[[queues.producers]]
+queue = "iptv-sync-queue"
+binding = "SYNC_QUEUE"
+
+[[queues.consumers]]
+queue = "iptv-sync-queue"
+max_batch_size = 1
+max_retries = 3
 
 [triggers]
 crons = ["0 3 * * *"]
+
+[observability]
+[observability.logs]
+enabled = true
+invocation_logs = true
