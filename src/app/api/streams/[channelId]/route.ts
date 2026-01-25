@@ -6,7 +6,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
-  const db = getDB();
+  const db = await getDB();
   const { channelId } = await params;
 
   const result = await db

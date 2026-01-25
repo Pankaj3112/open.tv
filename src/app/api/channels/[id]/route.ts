@@ -6,7 +6,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const db = getDB();
+  const db = await getDB();
   const { id } = await params;
 
   const result = await db

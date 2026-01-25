@@ -3,7 +3,7 @@ import { getDB } from '@/lib/db';
 export const runtime = 'edge';
 
 export async function GET(request: Request) {
-  const db = getDB();
+  const db = await getDB();
   const { searchParams } = new URL(request.url);
 
   const countriesParam = searchParams.get('countries');

@@ -1,5 +1,6 @@
-import { getRequestContext } from '@cloudflare/next-on-pages';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-export function getDB() {
-  return getRequestContext().env.DB;
+export async function getDB() {
+  const { env } = await getCloudflareContext();
+  return env.DB;
 }
