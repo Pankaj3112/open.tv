@@ -205,6 +205,21 @@ const worker = {
       ).bind(Date.now(), "error", String(error)).run();
     }
   },
+
+  // Fetch handler for manual triggering during development
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    const url = new URL(request.url);
+
+    if (url.pathname === "/sync" || url.pathname === "/cdn-cgi/handler/scheduled") {
+      // Manually trigger the scheduled handler
+      await worker.scheduled({} as ScheduledEvent, env, ctx);
+      return new Response("Sync completed", { status: 200 });
+    }
+
+    return new Response("IPTV Sync Worker. POST to /sync to trigger manually.", {
+      status: 200
+    });
+  },
 };
 
 export default worker;
