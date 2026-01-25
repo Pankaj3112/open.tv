@@ -6,7 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useRef } from "react";
 
 interface Channel {
-  _id: string;
   channelId: string;
   name: string;
   logo?: string;
@@ -84,7 +83,7 @@ export function ChannelGrid({
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {channels.map((channel) => (
           <ChannelCard
-            key={channel._id}
+            key={channel.channelId}
             channel={channel}
             countryFlag={countryFlags[channel.country]}
             isPlaying={playingChannelId === channel.channelId}
