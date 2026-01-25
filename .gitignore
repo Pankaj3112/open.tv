@@ -44,5 +44,6 @@ yarn-error.log*
 next-env.d.ts
 
 .wrangler/
+.open-next/
 iptv-sync-worker/.wrangler/
 iptv-sync-worker/node_modules/
