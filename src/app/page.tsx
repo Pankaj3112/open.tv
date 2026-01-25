@@ -350,7 +350,6 @@ function HomeContent() {
                 channelName={playingChannel.name}
                 stream={playingStreams?.[0] ? {
                   url: playingStreams[0].url,
-                  quality: playingStreams[0].quality ?? undefined,
                   httpReferrer: playingStreams[0].http_referrer ?? undefined,
                   userAgent: playingStreams[0].user_agent ?? undefined,
                 } : null}
