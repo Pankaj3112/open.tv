@@ -6,6 +6,6 @@ compatibility_flags = ["nodejs_compat"]
 assets = { directory = ".open-next/assets", binding = "ASSETS" }
 
 [[d1_databases]]
-binding = "iptv_db"
+binding = "DB"
 database_name = "iptv-db"
 database_id = "b48a70f7-8280-4d85-9183-952a452a9748"
