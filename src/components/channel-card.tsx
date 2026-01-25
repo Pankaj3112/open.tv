@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 interface Channel {
-  _id: string;
   channelId: string;
   name: string;
   logo?: string;

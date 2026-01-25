@@ -1,7 +1,5 @@
 "use client";
 
-import { useQuery, usePaginatedQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
 import { Header } from "@/components/header";
 import { Sidebar } from "@/components/sidebar";
 import { ChannelGrid } from "@/components/channel-grid";
@@ -10,6 +8,12 @@ import { FilterChips } from "@/components/filter-chips";
 import { useFilters } from "@/hooks/use-filters";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useHistory } from "@/hooks/use-history";
+import { useCategories } from "@/hooks/use-categories";
+import { useCountries } from "@/hooks/use-countries";
+import { useChannels } from "@/hooks/use-channels";
+import { useChannel } from "@/hooks/use-channel";
+import { useStreams } from "@/hooks/use-streams";
+import { useChannelsByIds } from "@/hooks/use-channels-by-ids";
 import { useMemo, useState, useCallback, Suspense } from "react";
 
 function HomeContent() {
@@ -21,17 +25,14 @@ function HomeContent() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Favorites controls
   const [favoritesSort, setFavoritesSort] = useState<
     "recent" | "most-watched" | "alphabetical"
   >("recent");
 
-  // History controls
   const [historyTimeFilter, setHistoryTimeFilter] = useState<
     "today" | "week" | "all"
   >("all");
 
-  // Calculate sidebar mode
   const sidebarMode = showFavorites
     ? "favorites"
     : showHistory
@@ -39,63 +40,39 @@ function HomeContent() {
       : "browse";
 
   // Fetch reference data
-  const categoriesQuery = useQuery(api.categories.list);
-  const countriesQuery = useQuery(api.countries.list);
-  const categoriesData = useMemo(
-    () => categoriesQuery ?? [],
-    [categoriesQuery]
-  );
-  const countriesData = useMemo(
-    () => countriesQuery ?? [],
-    [countriesQuery]
-  );
+  const { categories: categoriesData } = useCategories();
+  const { countries: countriesData } = useCountries();
 
   // Fetch channels with pagination
   const {
-    results: channels,
-    status,
+    channels,
+    isLoading: channelsLoading,
+    hasMore,
     loadMore,
-  } = usePaginatedQuery(
-    api.channels.list,
-    {
-      search: filters.search || undefined,
-      countries: filters.countries.length ? filters.countries : undefined,
-      categories: filters.categories.length ? filters.categories : undefined,
-    },
-    { initialNumItems: 20 },
-  );
+  } = useChannels({
+    search: filters.search || undefined,
+    countries: filters.countries.length ? filters.countries : undefined,
+    categories: filters.categories.length ? filters.categories : undefined,
+  });
 
+  // Fetch favorite channels
+  const { channels: favoriteChannels, isLoading: favoritesLoading } =
+    useChannelsByIds(showFavorites ? favorites : []);
 
-  // Fetch favorite channels if showing favorites
-  const favoriteChannels = useQuery(
-    api.channels.getByIds,
-    showFavorites && favorites.length > 0 ? { channelIds: favorites } : "skip",
-  );
-
-  // Fetch history channels if showing history
+  // Fetch history channels
   const historyChannelIds = getHistoryChannelIds();
-  const historyChannels = useQuery(
-    api.channels.getByIds,
-    showHistory && historyChannelIds.length > 0
-      ? { channelIds: historyChannelIds }
-      : "skip",
-  );
+  const { channels: historyChannels, isLoading: historyLoading } =
+    useChannelsByIds(showHistory ? historyChannelIds : []);
 
   // Fetch current playing channel and stream
-  const playingChannel = useQuery(
-    api.channels.getById,
-    filters.playing ? { channelId: filters.playing } : "skip",
-  );
-  const playingStream = useQuery(
-    api.streams.getByChannelId,
-    filters.playing ? { channelId: filters.playing } : "skip",
-  );
+  const { channel: playingChannel } = useChannel(filters.playing);
+  const { streams: playingStreams } = useStreams(filters.playing);
 
   // Transform data for components
   const categoryOptions = useMemo(
     () =>
       categoriesData.map((c) => ({
-        id: c.categoryId,
+        id: c.category_id,
         label: c.name,
       })),
     [categoriesData],
@@ -123,35 +100,20 @@ function HomeContent() {
     [countriesData],
   );
 
-  // Compute time cutoffs for history filter
-  // eslint-disable-next-line react-hooks/purity
-  const now = Date.now();
-  const oneDayAgo = now - 24 * 60 * 60 * 1000;
-  const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
-
   // Determine which channels to display
   const displayChannels = useMemo(() => {
+    // eslint-disable-next-line react-hooks/purity
+    const now = Date.now();
+    const oneDayAgo = now - 24 * 60 * 60 * 1000;
+    const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
     if (showFavorites) {
-      // Return empty if no favorites at all
-      if (favorites.length === 0) {
-        return [];
-      }
+      if (favorites.length === 0) return [];
 
-      // Return empty if still loading
-      if (favoriteChannels === undefined) {
-        return [];
-      }
+      const filtered = [...favoriteChannels];
 
-      // Filter out nulls first
-      const filtered = favoriteChannels.filter(
-        (ch): ch is NonNullable<typeof ch> => ch !== null,
-      );
-
-      // Apply sort
       if (favoritesSort === "alphabetical") {
         filtered.sort((a, b) => a.name.localeCompare(b.name));
       } else if (favoritesSort === "recent") {
-        // Most recently added first (end of favorites array)
         const favoriteOrder = favorites.reduce(
           (acc, id, index) => {
             acc[id] = index;
@@ -161,11 +123,10 @@ function HomeContent() {
         );
         filtered.sort(
           (a, b) =>
-            (favoriteOrder[b.channelId] ?? 0) -
-            (favoriteOrder[a.channelId] ?? 0),
+            (favoriteOrder[b.channel_id] ?? 0) -
+            (favoriteOrder[a.channel_id] ?? 0),
         );
       } else if (favoritesSort === "most-watched") {
-        // Count how many times each channel appears in history
         const watchCounts = history.reduce(
           (acc, entry) => {
             acc[entry.channelId] = (acc[entry.channelId] || 0) + 1;
@@ -175,7 +136,7 @@ function HomeContent() {
         );
         filtered.sort(
           (a, b) =>
-            (watchCounts[b.channelId] || 0) - (watchCounts[a.channelId] || 0),
+            (watchCounts[b.channel_id] || 0) - (watchCounts[a.channel_id] || 0),
         );
       }
 
@@ -183,22 +144,10 @@ function HomeContent() {
     }
 
     if (showHistory) {
-      // Return empty if no history at all
-      if (history.length === 0) {
-        return [];
-      }
+      if (history.length === 0) return [];
 
-      // Return empty if still loading
-      if (historyChannels === undefined) {
-        return [];
-      }
+      let filtered = [...historyChannels];
 
-      // Filter out nulls first
-      let filtered = historyChannels.filter(
-        (ch): ch is NonNullable<typeof ch> => ch !== null,
-      );
-
-      // Apply time filter
       const filteredHistoryEntries = history.filter((entry) => {
         if (historyTimeFilter === "today") return entry.timestamp >= oneDayAgo;
         if (historyTimeFilter === "week") return entry.timestamp >= oneWeekAgo;
@@ -209,10 +158,9 @@ function HomeContent() {
         filteredHistoryEntries.map((e) => e.channelId),
       );
       filtered = filtered.filter((channel) =>
-        filteredChannelIds.has(channel.channelId),
+        filteredChannelIds.has(channel.channel_id),
       );
 
-      // Sort by most recent first
       const timeOrder = filteredHistoryEntries.reduce(
         (acc, entry, index) => {
           acc[entry.channelId] = index;
@@ -222,8 +170,8 @@ function HomeContent() {
       );
       filtered.sort(
         (a, b) =>
-          (timeOrder[a.channelId] ?? Infinity) -
-          (timeOrder[b.channelId] ?? Infinity),
+          (timeOrder[a.channel_id] ?? Infinity) -
+          (timeOrder[b.channel_id] ?? Infinity),
       );
 
       return filtered;
@@ -240,12 +188,8 @@ function HomeContent() {
     favorites,
     history,
     historyTimeFilter,
-    oneDayAgo,
-    oneWeekAgo,
   ]);
 
-
-  // Build filter chips
   const filterChips = useMemo(() => {
     const chips: Array<{
       type: "category" | "country";
@@ -255,7 +199,7 @@ function HomeContent() {
     }> = [];
 
     filters.categories.forEach((id) => {
-      const cat = categoriesData.find((c) => c.categoryId === id);
+      const cat = categoriesData.find((c) => c.category_id === id);
       if (cat) chips.push({ type: "category", id, label: cat.name });
     });
 
@@ -278,7 +222,6 @@ function HomeContent() {
     filters.countries.length +
     (filters.search ? 1 : 0);
 
-  // Handlers
   const handlePlay = useCallback(
     (channelId: string) => {
       updateFilters({ playing: channelId });
@@ -330,26 +273,30 @@ function HomeContent() {
   }, [clearHistory]);
 
   const handleLoadMore = useCallback(() => {
-    if (status === "CanLoadMore") {
-      loadMore(20);
-    }
-  }, [status, loadMore]);
+    loadMore();
+  }, [loadMore]);
 
-  // Calculate loading state based on mode
   const isLoading = useMemo(() => {
     if (showFavorites) {
-      // Loading if we have favorites but haven't fetched channels yet
-      return favorites.length > 0 && favoriteChannels === undefined;
+      return favorites.length > 0 && favoritesLoading;
     }
     if (showHistory) {
-      // Loading if we have history but haven't fetched channels yet
-      return historyChannelIds.length > 0 && historyChannels === undefined;
+      return historyChannelIds.length > 0 && historyLoading;
     }
-    // Browse mode loading
-    return status === "LoadingFirstPage";
-  }, [showFavorites, showHistory, favorites.length, favoriteChannels, historyChannelIds.length, historyChannels, status]);
+    return channelsLoading;
+  }, [showFavorites, showHistory, favorites.length, favoritesLoading, historyChannelIds.length, historyLoading, channelsLoading]);
 
-  const hasMore = status === "CanLoadMore";
+  // Map channel data to expected format
+  const mappedChannels = useMemo(() => {
+    return displayChannels.map((ch) => ({
+      channelId: ch.channel_id,
+      name: ch.name,
+      logo: ch.logo ?? undefined,
+      country: ch.country,
+      category: ch.category,
+      network: ch.network ?? undefined,
+    }));
+  }, [displayChannels]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -370,7 +317,6 @@ function HomeContent() {
       />
 
       <div className="flex">
-        {/* Desktop Sidebar */}
         <Sidebar
           className="hidden lg:flex w-72 shrink-0 border-r h-[calc(100vh-3.5rem)] sticky top-14"
           mode={sidebarMode}
@@ -397,20 +343,21 @@ function HomeContent() {
           onClearHistory={handleClearHistory}
         />
 
-        {/* Main Content */}
         <main className="flex-1 p-4 lg:p-6">
-          {/* Video Player */}
           {filters.playing && playingChannel && (
             <div className="mb-6">
               <VideoPlayer
                 channelName={playingChannel.name}
-                stream={playingStream?.[0] ?? null}
+                stream={playingStreams?.[0] ? {
+                  url: playingStreams[0].url,
+                  httpReferrer: playingStreams[0].http_referrer ?? undefined,
+                  userAgent: playingStreams[0].user_agent ?? undefined,
+                } : null}
                 onClose={handleClosePlayer}
               />
             </div>
           )}
 
-          {/* Filter Chips */}
           <div className="mb-4">
             <FilterChips
               chips={filterChips}
@@ -419,9 +366,8 @@ function HomeContent() {
             />
           </div>
 
-          {/* Channel Grid */}
           <ChannelGrid
-            channels={displayChannels}
+            channels={mappedChannels}
             countryFlags={countryFlags}
             playingChannelId={filters.playing ?? undefined}
             favorites={favorites}

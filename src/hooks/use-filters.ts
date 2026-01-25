@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 export interface Filters {
   search: string;
@@ -15,13 +15,18 @@ export function useFilters() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const filters: Filters = {
-    search: searchParams.get("q") || "",
-    countries: searchParams.get("countries")?.split(",").filter(Boolean) || [],
-    categories:
-      searchParams.get("categories")?.split(",").filter(Boolean) || [],
-    playing: searchParams.get("playing"),
-  };
+  // Memoize filter values to prevent unnecessary re-renders
+  const search = searchParams.get("q") || "";
+  const countriesParam = searchParams.get("countries") || "";
+  const categoriesParam = searchParams.get("categories") || "";
+  const playing = searchParams.get("playing");
+
+  const filters: Filters = useMemo(() => ({
+    search,
+    countries: countriesParam ? countriesParam.split(",").filter(Boolean) : [],
+    categories: categoriesParam ? categoriesParam.split(",").filter(Boolean) : [],
+    playing,
+  }), [search, countriesParam, categoriesParam, playing]);
 
   const updateFilters = useCallback(
     (updates: Partial<Filters>) => {

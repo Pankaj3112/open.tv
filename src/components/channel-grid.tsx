@@ -6,7 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useRef } from "react";
 
 interface Channel {
-  _id: string;
   channelId: string;
   name: string;
   logo?: string;
@@ -40,15 +39,21 @@ export function ChannelGrid({
   mode = "browse",
 }: ChannelGridProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const onLoadMoreRef = useRef(onLoadMore);
 
-  // Infinite scroll
+  // Keep ref updated without triggering effect
   useEffect(() => {
-    if (!onLoadMore || !hasMore) return;
+    onLoadMoreRef.current = onLoadMore;
+  });
+
+  // Infinite scroll - only recreate observer when hasMore changes
+  useEffect(() => {
+    if (!hasMore) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          onLoadMore();
+        if (entries[0].isIntersecting && onLoadMoreRef.current) {
+          onLoadMoreRef.current();
         }
       },
       { threshold: 0.1 }
@@ -59,7 +64,7 @@ export function ChannelGrid({
     }
 
     return () => observer.disconnect();
-  }, [onLoadMore, hasMore]);
+  }, [hasMore]);
 
   if (isLoading && channels.length === 0) {
     return (
@@ -84,7 +89,7 @@ export function ChannelGrid({
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {channels.map((channel) => (
           <ChannelCard
-            key={channel._id}
+            key={channel.channelId}
             channel={channel}
             countryFlag={countryFlags[channel.country]}
             isPlaying={playingChannelId === channel.channelId}
