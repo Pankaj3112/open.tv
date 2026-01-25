@@ -39,15 +39,21 @@ export function ChannelGrid({
   mode = "browse",
 }: ChannelGridProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const onLoadMoreRef = useRef(onLoadMore);
 
-  // Infinite scroll
+  // Keep ref updated without triggering effect
   useEffect(() => {
-    if (!onLoadMore || !hasMore) return;
+    onLoadMoreRef.current = onLoadMore;
+  });
+
+  // Infinite scroll - only recreate observer when hasMore changes
+  useEffect(() => {
+    if (!hasMore) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          onLoadMore();
+        if (entries[0].isIntersecting && onLoadMoreRef.current) {
+          onLoadMoreRef.current();
         }
       },
       { threshold: 0.1 }
@@ -58,7 +64,7 @@ export function ChannelGrid({
     }
 
     return () => observer.disconnect();
-  }, [onLoadMore, hasMore]);
+  }, [hasMore]);
 
   if (isLoading && channels.length === 0) {
     return (

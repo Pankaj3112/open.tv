@@ -22,51 +22,73 @@ export function useChannels(options: UseChannelsOptions) {
   const [status, setStatus] = useState<Status>('loading');
   const cursorRef = useRef<number | null>(null);
 
-  const buildUrl = useCallback((cursor: number) => {
-    const params = new URLSearchParams();
-    if (options.search) params.set('search', options.search);
-    if (options.countries?.length) params.set('countries', options.countries.join(','));
-    if (options.categories?.length) params.set('categories', options.categories.join(','));
-    params.set('cursor', String(cursor));
-    params.set('limit', '20');
-    return `/api/channels?${params}`;
-  }, [options.search, options.countries, options.categories]);
+  // Create stable string keys
+  const searchKey = options.search ?? '';
+  const countriesKey = options.countries?.join(',') ?? '';
+  const categoriesKey = options.categories?.join(',') ?? '';
 
-  // Reset and fetch on filter change
+  // Reset and fetch when filters change
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setChannels([]);
-    cursorRef.current = null;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setStatus('loading');
+    let cancelled = false;
 
-    fetch(buildUrl(0))
-      .then((res) => res.json())
-      .then((data) => {
-        setChannels(data.channels);
-        cursorRef.current = data.nextCursor;
-        setStatus(data.nextCursor !== null ? 'hasMore' : 'idle');
-      })
-      .catch(() => {
-        setStatus('idle');
-      });
-  }, [buildUrl]);
+    const doFetch = async () => {
+      setChannels([]);
+      cursorRef.current = null;
+      setStatus('loading');
+
+      const params = new URLSearchParams();
+      if (searchKey) params.set('search', searchKey);
+      if (countriesKey) params.set('countries', countriesKey);
+      if (categoriesKey) params.set('categories', categoriesKey);
+      params.set('cursor', '0');
+      params.set('limit', '20');
+
+      try {
+        const res = await fetch(`/api/channels?${params}`);
+        const data = await res.json();
+
+        if (!cancelled) {
+          setChannels(data.channels || []);
+          cursorRef.current = data.nextCursor;
+          setStatus(data.nextCursor !== null ? 'hasMore' : 'idle');
+        }
+      } catch {
+        if (!cancelled) {
+          setStatus('idle');
+        }
+      }
+    };
+
+    doFetch();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchKey, countriesKey, categoriesKey]);
 
   const loadMore = useCallback(() => {
     if (status !== 'hasMore' || cursorRef.current === null) return;
 
     setStatus('loadingMore');
-    fetch(buildUrl(cursorRef.current))
+
+    const params = new URLSearchParams();
+    if (searchKey) params.set('search', searchKey);
+    if (countriesKey) params.set('countries', countriesKey);
+    if (categoriesKey) params.set('categories', categoriesKey);
+    params.set('cursor', String(cursorRef.current));
+    params.set('limit', '20');
+
+    fetch(`/api/channels?${params}`)
       .then((res) => res.json())
       .then((data) => {
-        setChannels((prev) => [...prev, ...data.channels]);
+        setChannels((prev) => [...prev, ...(data.channels || [])]);
         cursorRef.current = data.nextCursor;
         setStatus(data.nextCursor !== null ? 'hasMore' : 'idle');
       })
       .catch(() => {
-        setStatus('hasMore'); // Allow retry
+        setStatus('hasMore');
       });
-  }, [buildUrl, status]);
+  }, [status, searchKey, countriesKey, categoriesKey]);
 
   return {
     channels,
