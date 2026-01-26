@@ -59,7 +59,7 @@ export function Header(props: HeaderProps) {
 
           <Button variant="ghost" size="icon" asChild>
             <a
-              href="https://github.com/Pankaj3112/iptv"
+              href="https://github.com/Pankaj3112/open.tv"
               target="_blank"
               rel="noopener noreferrer"
             >

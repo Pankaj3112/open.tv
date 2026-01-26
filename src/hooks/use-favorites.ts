@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const STORAGE_KEY = "iptv-favorites";
+const STORAGE_KEY = "opentv-favorites";
 
 // Helper to safely get from localStorage (only on client)
 function getStoredFavorites(): string[] {

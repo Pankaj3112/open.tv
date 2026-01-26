@@ -8,7 +8,7 @@ import { join } from "path";
 const API_BASE = "https://iptv-org.github.io/api";
 const LOGOS_CSV_URL =
   "https://raw.githubusercontent.com/iptv-org/database/master/data/logos.csv";
-const DATABASE_NAME = "iptv-db";
+const DATABASE_NAME = "opentv-db";
 
 // D1 limits: Keep transactions small to avoid timeouts
 const ROWS_PER_TRANSACTION = 2000; // ~2000 rows per transaction

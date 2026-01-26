@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IPTV Browser",
+  title: "open.tv",
   description: "Browse and watch IPTV channels from around the world",
 };
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const STORAGE_KEY = "iptv-history";
+const STORAGE_KEY = "opentv-history";
 const MAX_HISTORY = 50;
 
 interface HistoryEntry {

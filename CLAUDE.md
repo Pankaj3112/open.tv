@@ -33,10 +33,10 @@ npm run pages:deploy  # Deploy to Cloudflare Pages
 - `src/components/` - React components, `ui/` contains shadcn components
 - `src/hooks/` - Custom hooks for data fetching, filters, favorites, history
 - `src/lib/` - Utility functions including D1 database access
-- `iptv-sync-worker/` - Cloudflare Worker for daily data sync
+- `scripts/` - Sync scripts for daily data sync
 
 ### Data Flow
-1. **Sync:** `iptv-sync-worker` fetches from IPTV-ORG API daily (cron at 3:00 UTC)
+1. **Sync:** Sync script fetches from IPTV-ORG API daily (cron at 3:00 UTC)
 2. **Storage:** Cloudflare D1 database stores channels, streams, categories, countries
 3. **API:** Edge API routes query D1 directly (`/api/channels`, `/api/categories`, etc.)
 4. **Frontend:** Uses custom fetch-based hooks for data fetching
@@ -66,9 +66,8 @@ npm run pages:deploy  # Deploy to Cloudflare Pages
 
 ## Deployment
 
-1. Create D1 database: `npx wrangler d1 create iptv-db`
-2. Update `database_id` in `wrangler.toml` and `iptv-sync-worker/wrangler.toml`
-3. Apply schema: `npx wrangler d1 execute iptv-db --file=schema.sql`
-4. Deploy sync worker: `cd iptv-sync-worker && npm install && npm run deploy`
-5. Trigger initial sync via Cloudflare dashboard
-6. Deploy Next.js: `npm run pages:deploy`
+1. Create D1 database: `npx wrangler d1 create opentv-db`
+2. Update `database_id` in `wrangler.toml`
+3. Apply schema: `npx wrangler d1 execute opentv-db --file=schema.sql`
+4. Run sync script to populate data
+5. Deploy Next.js: `npm run pages:deploy`
