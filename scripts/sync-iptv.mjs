@@ -10,6 +10,10 @@ const LOGOS_CSV_URL =
   "https://raw.githubusercontent.com/iptv-org/database/master/data/logos.csv";
 const DATABASE_NAME = "opentv-db";
 
+// Check for --local flag
+const IS_LOCAL = process.argv.includes("--local");
+const D1_FLAG = IS_LOCAL ? "--local" : "--remote";
+
 // D1 limits: Keep transactions small to avoid timeouts
 const ROWS_PER_TRANSACTION = 2000; // ~2000 rows per transaction
 const ROWS_PER_INSERT = 100; // 100 rows per bulk INSERT statement
@@ -110,7 +114,7 @@ function executeSqlFile(sqlContent, description) {
   try {
     console.log(`  Executing: ${description}...`);
     execSync(
-      `npx wrangler d1 execute ${DATABASE_NAME} --remote --yes --file="${tmpFile}"`,
+      `npx wrangler d1 execute ${DATABASE_NAME} ${D1_FLAG} --yes --file="${tmpFile}"`,
       {
         stdio: "pipe", // Suppress wrangler output
       },
@@ -125,7 +129,7 @@ function executeSqlFile(sqlContent, description) {
 }
 
 async function main() {
-  console.log("Starting IPTV data sync...");
+  console.log(`Starting IPTV data sync (${IS_LOCAL ? "LOCAL" : "REMOTE"})...`);
   const startTime = Date.now();
 
   // Fetch all data in parallel

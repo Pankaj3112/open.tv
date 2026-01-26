@@ -7,6 +7,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "sync:local": "node scripts/sync-iptv.mjs --local",
     "pages:build": "NODE_OPTIONS=--max-old-space-size=4096 npx @opennextjs/cloudflare build",
     "pages:preview": "npm run pages:build && npx wrangler dev",
     "pages:deploy": "npm run pages:build && npx wrangler deploy"
