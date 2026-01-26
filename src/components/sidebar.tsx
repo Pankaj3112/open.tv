@@ -14,6 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useState } from "react";
 
 interface FilterOption {
@@ -95,35 +97,20 @@ export function Sidebar({
           {/* Sort options */}
           <div className="space-y-2">
             <h3 className="text-sm font-medium">Sort by</h3>
-            <div className="space-y-1">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  checked={favoritesSort === "recent"}
-                  onChange={() => onFavoritesSortChange("recent")}
-                  className="h-4 w-4"
-                />
-                Recently added
-              </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  checked={favoritesSort === "most-watched"}
-                  onChange={() => onFavoritesSortChange("most-watched")}
-                  className="h-4 w-4"
-                />
-                Most watched
-              </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  checked={favoritesSort === "alphabetical"}
-                  onChange={() => onFavoritesSortChange("alphabetical")}
-                  className="h-4 w-4"
-                />
-                A-Z
-              </label>
-            </div>
+            <RadioGroup value={favoritesSort} onValueChange={onFavoritesSortChange}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="recent" id="sort-recent" />
+                <Label htmlFor="sort-recent" className="text-sm cursor-pointer">Recently added</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="most-watched" id="sort-most-watched" />
+                <Label htmlFor="sort-most-watched" className="text-sm cursor-pointer">Most watched</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="alphabetical" id="sort-alphabetical" />
+                <Label htmlFor="sort-alphabetical" className="text-sm cursor-pointer">A-Z</Label>
+              </div>
+            </RadioGroup>
           </div>
         </div>
 
@@ -191,35 +178,20 @@ export function Sidebar({
           {/* Time filter */}
           <div className="space-y-2">
             <h3 className="text-sm font-medium">Show</h3>
-            <div className="space-y-1">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  checked={historyTimeFilter === "today"}
-                  onChange={() => onHistoryTimeFilterChange("today")}
-                  className="h-4 w-4"
-                />
-                Today
-              </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  checked={historyTimeFilter === "week"}
-                  onChange={() => onHistoryTimeFilterChange("week")}
-                  className="h-4 w-4"
-                />
-                This week
-              </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  checked={historyTimeFilter === "all"}
-                  onChange={() => onHistoryTimeFilterChange("all")}
-                  className="h-4 w-4"
-                />
-                All time
-              </label>
-            </div>
+            <RadioGroup value={historyTimeFilter} onValueChange={onHistoryTimeFilterChange}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="today" id="filter-today" />
+                <Label htmlFor="filter-today" className="text-sm cursor-pointer">Today</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="week" id="filter-week" />
+                <Label htmlFor="filter-week" className="text-sm cursor-pointer">This week</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="all" id="filter-all" />
+                <Label htmlFor="filter-all" className="text-sm cursor-pointer">All time</Label>
+              </div>
+            </RadioGroup>
           </div>
         </div>
 
