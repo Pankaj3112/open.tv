@@ -129,11 +129,8 @@ export function useChannelProbing<T extends { channel_id: string }>(
     });
   }, []);
 
-  // Filter out failed channels
-  const filteredChannels = channels.filter((ch) => {
-    const status = probingStatus.get(ch.channel_id);
-    return status !== 'failed';
-  });
+  // Return all channels (don't filter failed - show with failed indicator instead)
+  const filteredChannels = channels;
 
   const isProbing = Array.from(probingStatus.values()).some(
     (status) => status === 'pending' || status === 'probing'

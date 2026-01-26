@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Heart } from "lucide-react";
+import { Heart, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -39,7 +39,7 @@ export function ChannelCard({
       className={cn(
         "group relative flex flex-col rounded-lg border bg-card p-3 transition-all hover:shadow-lg hover:-translate-y-0.5 cursor-pointer",
         isPlaying && "ring-2 ring-primary",
-        (probingStatus === 'pending' || probingStatus === 'probing') && "opacity-70"
+        probingStatus === 'failed' && "opacity-60"
       )}
       onClick={() => onPlay(channel.channelId)}
     >
@@ -56,6 +56,20 @@ export function ChannelCard({
         ) : (
           <div className="flex h-full w-full items-center justify-center text-4xl">
             {countryFlag || "📺"}
+          </div>
+        )}
+
+        {/* Probing loader */}
+        {(probingStatus === 'pending' || probingStatus === 'probing') && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+            <Loader2 className="h-6 w-6 animate-spin text-white" />
+          </div>
+        )}
+
+        {/* Failed indicator */}
+        {probingStatus === 'failed' && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <AlertCircle className="h-6 w-6 text-red-500" />
           </div>
         )}
       </div>
