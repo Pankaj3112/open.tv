@@ -3,11 +3,26 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { X, RefreshCw, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Stream {
   url: string;
+  quality?: string;
   httpReferrer?: string;
   userAgent?: string;
+}
+
+function getQualityBadge(quality?: string): { label: string; variant: "default" | "secondary" } | null {
+  if (!quality) return null;
+
+  const q = quality.toLowerCase();
+  const isHighQuality = q.includes("4k") || q.includes("2160") || q.includes("1080");
+
+  return {
+    label: quality,
+    variant: isHighQuality ? "default" : "secondary"
+  };
 }
 
 interface VideoPlayerProps {
@@ -138,8 +153,8 @@ export function VideoPlayer({ channelName, streams, onClose }: VideoPlayerProps)
 
   return (
     <>
-      {/* Placeholder to maintain layout space */}
-      <div ref={containerRef} className="w-full aspect-video" />
+      {/* Placeholder to maintain layout space (video + player bar + spacing) */}
+      <div ref={containerRef} className="w-full aspect-video mb-16" />
 
       {/* Floating player */}
       <div
@@ -148,10 +163,9 @@ export function VideoPlayer({ channelName, streams, onClose }: VideoPlayerProps)
           transition-all duration-300 ease-in-out
           ${isFloating
             ? "fixed bottom-4 right-4 z-50 w-80 md:w-96"
-            : "absolute inset-0"
+            : "absolute top-0 left-0 right-0 z-10"
           }
         `}
-        style={!isFloating ? { position: "absolute", top: 0, left: 0, right: 0 } : undefined}
       >
         {/* Video container with 16:9 aspect ratio */}
         <div className="relative aspect-video">
@@ -189,9 +203,21 @@ export function VideoPlayer({ channelName, streams, onClose }: VideoPlayerProps)
               <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
               LIVE
             </span>
-            <span className={`font-medium ${isFloating ? "text-sm truncate max-w-32" : ""}`}>
-              {channelName}
-            </span>
+            {(() => {
+              const badge = getQualityBadge(currentStream?.quality);
+              return badge ? (
+                <Badge variant={badge.variant} className="text-xs px-1.5 py-0">
+                  {badge.label}
+                </Badge>
+              ) : null;
+            })()}
+            {channelName === "Loading..." ? (
+              <Skeleton className="h-4 w-24" />
+            ) : (
+              <span className={`font-medium ${isFloating ? "text-sm truncate max-w-32" : ""}`}>
+                {channelName}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1">
             {isFloating && (

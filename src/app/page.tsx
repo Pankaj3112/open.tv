@@ -73,6 +73,7 @@ function HomeContent() {
     () =>
       (playingStreams ?? []).map((s) => ({
         url: s.url,
+        quality: s.quality ?? undefined,
         httpReferrer: s.http_referrer ?? undefined,
         userAgent: s.user_agent ?? undefined,
       })),
@@ -355,10 +356,10 @@ function HomeContent() {
         />
 
         <main className="flex-1 p-4 lg:p-6">
-          {filters.playing && playingChannel && (
+          {filters.playing && (
             <div className="relative mb-6">
               <VideoPlayer
-                channelName={playingChannel.name}
+                channelName={playingChannel?.name ?? "Loading..."}
                 streams={mappedPlayingStreams}
                 onClose={handleClosePlayer}
               />
