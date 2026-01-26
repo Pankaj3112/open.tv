@@ -15,6 +15,8 @@ import { useChannel } from "@/hooks/use-channel";
 import { useStreams } from "@/hooks/use-streams";
 import { useChannelsByIds } from "@/hooks/use-channels-by-ids";
 import { useMemo, useState, useCallback, Suspense } from "react";
+import { useChannelProbing } from "@/hooks/use-channel-probing";
+import { ProbeStream } from "@/lib/stream-probe";
 
 function HomeContent() {
   const { filters, updateFilters, clearFilters } = useFilters();
@@ -54,6 +56,28 @@ function HomeContent() {
     countries: filters.countries.length ? filters.countries : undefined,
     categories: filters.categories.length ? filters.categories : undefined,
   });
+
+  // Fetch streams for a channel (used by probing)
+  const fetchStreamsForChannel = useCallback(async (channelId: string): Promise<ProbeStream[]> => {
+    try {
+      const res = await fetch(`/api/streams/${channelId}`);
+      const streams = await res.json();
+      return streams.map((s: { url: string; quality?: string; http_referrer?: string; user_agent?: string }) => ({
+        url: s.url,
+        quality: s.quality ?? undefined,
+        httpReferrer: s.http_referrer ?? undefined,
+        userAgent: s.user_agent ?? undefined,
+      }));
+    } catch {
+      return [];
+    }
+  }, []);
+
+  // Probe channels for working streams
+  const { filteredChannels: probedChannels, probingStatus } = useChannelProbing(
+    channels,
+    fetchStreamsForChannel
+  );
 
   // Fetch favorite channels
   const { channels: favoriteChannels, isLoading: favoritesLoading } =
@@ -189,13 +213,13 @@ function HomeContent() {
       return filtered;
     }
 
-    return channels;
+    return probedChannels;
   }, [
     showFavorites,
     favoriteChannels,
     showHistory,
     historyChannels,
-    channels,
+    probedChannels,
     favoritesSort,
     favorites,
     history,
@@ -385,6 +409,7 @@ function HomeContent() {
             hasMore={hasMore && !showFavorites && !showHistory}
             onLoadMore={handleLoadMore}
             mode={sidebarMode}
+            probingStatus={probingStatus}
           />
         </main>
       </div>
