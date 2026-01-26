@@ -68,7 +68,9 @@ export function ChannelCard({
                 <Loader2 className="h-10 w-10 animate-spin text-white" />
               </div>
             </TooltipTrigger>
-            <TooltipContent>Checking stream availability...</TooltipContent>
+            <TooltipContent side="bottom" sideOffset={-40}>
+              Checking stream availability...
+            </TooltipContent>
           </Tooltip>
         )}
 
@@ -80,7 +82,9 @@ export function ChannelCard({
                 <AlertCircle className="h-10 w-10 text-red-500" />
               </div>
             </TooltipTrigger>
-            <TooltipContent>Stream unavailable</TooltipContent>
+            <TooltipContent side="bottom" sideOffset={-40}>
+              Stream unavailable
+            </TooltipContent>
           </Tooltip>
         )}
       </div>
