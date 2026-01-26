@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 interface Channel {
   channel_id: string;
@@ -9,17 +9,31 @@ interface Channel {
   network: string | null;
 }
 
+interface ChannelData {
+  channelId: string | null;
+  channel: Channel | null;
+  isLoading: boolean;
+}
+
 export function useChannel(channelId: string | null) {
-  const [data, setData] = useState<{ channel: Channel | null; isLoading: boolean }>({
+  const [data, setData] = useState<ChannelData>({
+    channelId: null,
     channel: null,
     isLoading: false,
   });
+  const lastFetchedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!channelId) {
       return;
     }
 
+    // Skip fetch if channelId hasn't changed
+    if (lastFetchedIdRef.current === channelId) {
+      return;
+    }
+
+    lastFetchedIdRef.current = channelId;
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setData((prev) => ({ ...prev, isLoading: true }));
@@ -29,6 +43,7 @@ export function useChannel(channelId: string | null) {
       .then((result) => {
         if (!cancelled) {
           setData({
+            channelId,
             channel: result.error ? null : result,
             isLoading: false,
           });
@@ -36,7 +51,7 @@ export function useChannel(channelId: string | null) {
       })
       .catch(() => {
         if (!cancelled) {
-          setData({ channel: null, isLoading: false });
+          setData({ channelId, channel: null, isLoading: false });
         }
       });
 
@@ -45,9 +60,10 @@ export function useChannel(channelId: string | null) {
     };
   }, [channelId]);
 
+  // Return stable reference - only changes when data.channel changes
   const channel = useMemo(() => {
-    return channelId ? data.channel : null;
-  }, [channelId, data.channel]);
+    return channelId && data.channelId === channelId ? data.channel : null;
+  }, [channelId, data.channelId, data.channel]);
 
   return { channel, isLoading: data.isLoading };
 }

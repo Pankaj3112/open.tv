@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 interface Stream {
   channel_id: string;
@@ -8,17 +8,31 @@ interface Stream {
   user_agent: string | null;
 }
 
+interface StreamsData {
+  channelId: string | null;
+  streams: Stream[];
+  isLoading: boolean;
+}
+
 export function useStreams(channelId: string | null) {
-  const [data, setData] = useState<{ streams: Stream[]; isLoading: boolean }>({
+  const [data, setData] = useState<StreamsData>({
+    channelId: null,
     streams: [],
     isLoading: false,
   });
+  const lastFetchedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!channelId) {
       return;
     }
 
+    // Skip fetch if channelId hasn't changed
+    if (lastFetchedIdRef.current === channelId) {
+      return;
+    }
+
+    lastFetchedIdRef.current = channelId;
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setData((prev) => ({ ...prev, isLoading: true }));
@@ -27,12 +41,12 @@ export function useStreams(channelId: string | null) {
       .then((res) => res.json())
       .then((result) => {
         if (!cancelled) {
-          setData({ streams: result, isLoading: false });
+          setData({ channelId, streams: result, isLoading: false });
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setData({ streams: [], isLoading: false });
+          setData({ channelId, streams: [], isLoading: false });
         }
       });
 
@@ -41,9 +55,10 @@ export function useStreams(channelId: string | null) {
     };
   }, [channelId]);
 
+  // Return stable reference - only changes when data.streams changes
   const streams = useMemo(() => {
-    return channelId ? data.streams : [];
-  }, [channelId, data.streams]);
+    return channelId && data.channelId === channelId ? data.streams : [];
+  }, [channelId, data.channelId, data.streams]);
 
   return { streams, isLoading: data.isLoading };
 }

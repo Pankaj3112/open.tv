@@ -68,6 +68,17 @@ function HomeContent() {
   const { channel: playingChannel } = useChannel(filters.playing);
   const { streams: playingStreams } = useStreams(filters.playing);
 
+  // Memoize mapped streams to prevent VideoPlayer re-renders
+  const mappedPlayingStreams = useMemo(
+    () =>
+      (playingStreams ?? []).map((s) => ({
+        url: s.url,
+        httpReferrer: s.http_referrer ?? undefined,
+        userAgent: s.user_agent ?? undefined,
+      })),
+    [playingStreams],
+  );
+
   // Transform data for components
   const categoryOptions = useMemo(
     () =>
@@ -348,11 +359,7 @@ function HomeContent() {
             <div className="mb-6">
               <VideoPlayer
                 channelName={playingChannel.name}
-                streams={(playingStreams ?? []).map((s) => ({
-                  url: s.url,
-                  httpReferrer: s.http_referrer ?? undefined,
-                  userAgent: s.user_agent ?? undefined,
-                }))}
+                streams={mappedPlayingStreams}
                 onClose={handleClosePlayer}
               />
             </div>
