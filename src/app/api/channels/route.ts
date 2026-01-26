@@ -42,5 +42,7 @@ export async function GET(request: Request) {
   return Response.json({
     channels,
     nextCursor: hasMore ? cursor + limit : null,
+  }, {
+    headers: { 'Cache-Control': 'public, max-age=86400' },
   });
 }

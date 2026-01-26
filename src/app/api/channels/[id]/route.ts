@@ -16,5 +16,7 @@ export async function GET(
     return Response.json({ error: 'Channel not found' }, { status: 404 });
   }
 
-  return Response.json(result);
+  return Response.json(result, {
+    headers: { 'Cache-Control': 'public, max-age=86400' },
+  });
 }

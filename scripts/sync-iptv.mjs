@@ -287,6 +287,44 @@ async function main() {
   console.log(`  - ${validStreams.length} streams`);
   console.log(`  - ${categories.length} categories`);
   console.log(`  - ${countries.length} countries`);
+
+  // Purge Cloudflare cache after successful sync
+  await purgeCache();
+}
+
+async function purgeCache() {
+  const ZONE_ID = process.env.CLOUDFLARE_ZONE_ID;
+  const API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
+
+  if (!ZONE_ID || !API_TOKEN) {
+    console.log("\n⚠️  Skipping cache purge: missing CLOUDFLARE_ZONE_ID or CLOUDFLARE_API_TOKEN");
+    return;
+  }
+
+  console.log("\n[5/5] Purging Cloudflare cache...");
+
+  try {
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${API_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ purge_everything: true }),
+      },
+    );
+
+    if (response.ok) {
+      console.log("  ✓ Cache purged successfully");
+    } else {
+      const error = await response.text();
+      console.error("  ✗ Cache purge failed:", error);
+    }
+  } catch (err) {
+    console.error("  ✗ Cache purge error:", err.message);
+  }
 }
 
 main().catch((err) => {

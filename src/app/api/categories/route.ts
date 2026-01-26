@@ -7,5 +7,7 @@ export async function GET() {
     .prepare('SELECT category_id, name FROM categories ORDER BY name')
     .all();
 
-  return Response.json(result.results);
+  return Response.json(result.results, {
+    headers: { 'Cache-Control': 'public, max-age=86400' },
+  });
 }

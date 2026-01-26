@@ -12,5 +12,7 @@ export async function GET(
     .bind(channelId)
     .all();
 
-  return Response.json(result.results);
+  return Response.json(result.results, {
+    headers: { 'Cache-Control': 'public, max-age=86400' },
+  });
 }

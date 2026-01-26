@@ -7,5 +7,7 @@ export async function GET() {
     .prepare('SELECT code, name, flag FROM countries ORDER BY name')
     .all();
 
-  return Response.json(result.results);
+  return Response.json(result.results, {
+    headers: { 'Cache-Control': 'public, max-age=86400' },
+  });
 }
