@@ -1,4 +1,5 @@
 import { getDB } from '@/lib/db';
+import { getCacheHeader } from '@/lib/cache';
 
 export async function GET(
   request: Request,
@@ -13,6 +14,6 @@ export async function GET(
     .all();
 
   return Response.json(result.results, {
-    headers: { 'Cache-Control': 'public, max-age=86400' },
+    headers: getCacheHeader(),
   });
 }

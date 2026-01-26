@@ -1,4 +1,4 @@
-# API Caching with Cache Purge After Sync
+# API Caching with Dynamic Expiry
 
 ## Problem
 
@@ -6,75 +6,56 @@ The app is read-only with data that syncs once daily at 3:00 UTC. Currently, eve
 
 ## Solution
 
-Add Cloudflare edge caching with cache purge after sync:
-1. API routes return `Cache-Control: public, max-age=86400` (24 hours)
-2. Sync script purges cache after successful data update
+Add Cloudflare edge caching with dynamic expiry that aligns with the sync schedule. Cache expires exactly when new data becomes available (3:00 UTC), ensuring:
+- Maximum cache efficiency (one fetch per day per unique request)
+- No stale data after sync
+- No external dependencies (no Zone ID or cache purge API needed)
 
 ## Implementation
 
-### Part 1: Add Cache Headers to API Routes
+### Cache Utility (`src/lib/cache.ts`)
 
-Update all API routes to include cache headers:
+```typescript
+const SYNC_HOUR_UTC = 3;
 
-**Files:**
+export function getCacheMaxAge(): number {
+  const now = new Date();
+  const nextSync = new Date(now);
+  nextSync.setUTCHours(SYNC_HOUR_UTC, 0, 0, 0);
+
+  if (now >= nextSync) {
+    nextSync.setUTCDate(nextSync.getUTCDate() + 1);
+  }
+
+  return Math.floor((nextSync.getTime() - now.getTime()) / 1000);
+}
+
+export function getCacheHeader(): { 'Cache-Control': string } {
+  return { 'Cache-Control': `public, max-age=${getCacheMaxAge()}` };
+}
+```
+
+### API Routes
+
+All routes use the `getCacheHeader()` utility:
+
 - `src/app/api/categories/route.ts`
 - `src/app/api/countries/route.ts`
 - `src/app/api/channels/route.ts`
 - `src/app/api/channels/[id]/route.ts`
 - `src/app/api/streams/[channelId]/route.ts`
 
-**Change:**
-```typescript
-return Response.json(data, {
-  headers: { 'Cache-Control': 'public, max-age=86400' }
-});
-```
+## How It Works
 
-### Part 2: Cache Purge in Sync Script
-
-Add cache purge at the end of `scripts/sync-iptv.mjs`:
-
-```javascript
-async function purgeCache() {
-  const ZONE_ID = process.env.CLOUDFLARE_ZONE_ID;
-  const API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
-
-  if (!ZONE_ID || !API_TOKEN) {
-    console.log('Skipping cache purge: missing CLOUDFLARE_ZONE_ID or CLOUDFLARE_API_TOKEN');
-    return;
-  }
-
-  const response = await fetch(
-    `https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ purge_everything: true }),
-    }
-  );
-
-  if (response.ok) {
-    console.log('✓ Cache purged successfully');
-  } else {
-    console.error('✗ Cache purge failed:', await response.text());
-  }
-}
-```
-
-### Part 3: GitHub Actions Setup
-
-Add `CLOUDFLARE_ZONE_ID` secret:
-- Go to repo → Settings → Secrets → Actions
-- Add new secret: `CLOUDFLARE_ZONE_ID` with the Zone ID value
-
-Ensure API token has "Zone - Cache Purge - Purge" permission.
+| Request Time (UTC) | Cache Expires | max-age |
+|--------------------|---------------|---------|
+| 11:00 PM | 3:00 AM next day | 4 hours |
+| 2:00 AM | 3:00 AM same day | 1 hour |
+| 4:00 AM | 3:00 AM next day | 23 hours |
 
 ## Benefits
 
 - Responses served from Cloudflare edge (faster, lower latency)
-- Reduced D1 database load
-- Fresh data immediately after sync
-- No stale data issues
+- Reduced D1 database load (one query per day per unique request)
+- Cache automatically expires when new data is available
+- No infrastructure dependencies (works on `*.pages.dev` domains)

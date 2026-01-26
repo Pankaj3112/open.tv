@@ -1,4 +1,5 @@
 import { getDB } from '@/lib/db';
+import { getCacheHeader } from '@/lib/cache';
 
 export async function GET(request: Request) {
   const db = await getDB();
@@ -43,6 +44,6 @@ export async function GET(request: Request) {
     channels,
     nextCursor: hasMore ? cursor + limit : null,
   }, {
-    headers: { 'Cache-Control': 'public, max-age=86400' },
+    headers: getCacheHeader(),
   });
 }
