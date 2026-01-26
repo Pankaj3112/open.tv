@@ -2,20 +2,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { probeChannelStreams, ProbeStream } from '@/lib/stream-probe';
 import { getProbeCache, setProbeCache, clearExpiredCache } from '@/lib/probe-cache';
 
-interface Channel {
-  channelId: string;
-  name: string;
-  logo?: string;
-  country: string;
-  category: string;
-}
-
 type ProbeStatus = 'pending' | 'probing' | 'working' | 'failed';
 
 const MAX_CONCURRENT_PROBES = 3;
 
-export function useChannelProbing(
-  channels: Channel[],
+export function useChannelProbing<T extends { channel_id: string }>(
+  channels: T[],
   fetchStreamsForChannel: (channelId: string) => Promise<ProbeStream[]>
 ) {
   const [probingStatus, setProbingStatus] = useState<Map<string, ProbeStatus>>(new Map());
@@ -37,11 +29,11 @@ export function useChannelProbing(
     const newStatus = new Map<string, ProbeStatus>();
 
     channels.forEach((channel) => {
-      const cached = getProbeCache(channel.channelId);
+      const cached = getProbeCache(channel.channel_id);
       if (cached) {
-        newStatus.set(channel.channelId, cached.status);
+        newStatus.set(channel.channel_id, cached.status);
       } else {
-        newStatus.set(channel.channelId, 'pending');
+        newStatus.set(channel.channel_id, 'pending');
       }
     });
 
@@ -110,13 +102,13 @@ export function useChannelProbing(
   // Queue pending channels for probing
   useEffect(() => {
     const pendingChannels = channels.filter((ch) => {
-      const status = probingStatus.get(ch.channelId);
+      const status = probingStatus.get(ch.channel_id);
       return status === 'pending';
     });
 
     pendingChannels.forEach((ch) => {
-      if (!probeQueueRef.current.includes(ch.channelId)) {
-        probeQueueRef.current.push(ch.channelId);
+      if (!probeQueueRef.current.includes(ch.channel_id)) {
+        probeQueueRef.current.push(ch.channel_id);
       }
     });
 
@@ -139,7 +131,7 @@ export function useChannelProbing(
 
   // Filter out failed channels
   const filteredChannels = channels.filter((ch) => {
-    const status = probingStatus.get(ch.channelId);
+    const status = probingStatus.get(ch.channel_id);
     return status !== 'failed';
   });
 
