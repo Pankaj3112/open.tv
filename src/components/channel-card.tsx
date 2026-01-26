@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Heart, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -61,22 +62,26 @@ export function ChannelCard({
 
         {/* Probing loader */}
         {(probingStatus === 'pending' || probingStatus === 'probing') && (
-          <div
-            className="absolute inset-0 flex items-center justify-center bg-black/30"
-            title="Checking stream availability..."
-          >
-            <Loader2 className="h-10 w-10 animate-spin text-white" />
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                <Loader2 className="h-10 w-10 animate-spin text-white" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Checking stream availability...</TooltipContent>
+          </Tooltip>
         )}
 
         {/* Failed indicator */}
         {probingStatus === 'failed' && (
-          <div
-            className="absolute inset-0 flex items-center justify-center bg-black/50"
-            title="Stream unavailable"
-          >
-            <AlertCircle className="h-10 w-10 text-red-500" />
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <AlertCircle className="h-10 w-10 text-red-500" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Stream unavailable</TooltipContent>
+          </Tooltip>
         )}
       </div>
 
