@@ -24,6 +24,7 @@ interface ChannelGridProps {
   hasMore?: boolean;
   isLoading?: boolean;
   mode?: "browse" | "favorites" | "history";
+  probingStatus?: Map<string, 'pending' | 'probing' | 'working' | 'failed'>;
 }
 
 export function ChannelGrid({
@@ -37,6 +38,7 @@ export function ChannelGrid({
   hasMore,
   isLoading,
   mode = "browse",
+  probingStatus,
 }: ChannelGridProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const onLoadMoreRef = useRef(onLoadMore);
@@ -96,6 +98,7 @@ export function ChannelGrid({
             isFavorite={favorites.includes(channel.channelId)}
             onPlay={onPlay}
             onToggleFavorite={onToggleFavorite}
+            probingStatus={probingStatus?.get(channel.channelId)}
           />
         ))}
       </div>
