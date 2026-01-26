@@ -61,15 +61,21 @@ export function ChannelCard({
 
         {/* Probing loader */}
         {(probingStatus === 'pending' || probingStatus === 'probing') && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-            <Loader2 className="h-6 w-6 animate-spin text-white" />
+          <div
+            className="absolute inset-0 flex items-center justify-center bg-black/30"
+            title="Checking stream availability..."
+          >
+            <Loader2 className="h-10 w-10 animate-spin text-white" />
           </div>
         )}
 
         {/* Failed indicator */}
         {probingStatus === 'failed' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <AlertCircle className="h-6 w-6 text-red-500" />
+          <div
+            className="absolute inset-0 flex items-center justify-center bg-black/50"
+            title="Stream unavailable"
+          >
+            <AlertCircle className="h-10 w-10 text-red-500" />
           </div>
         )}
       </div>
