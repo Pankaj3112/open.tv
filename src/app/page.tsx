@@ -348,11 +348,11 @@ function HomeContent() {
             <div className="mb-6">
               <VideoPlayer
                 channelName={playingChannel.name}
-                stream={playingStreams?.[0] ? {
-                  url: playingStreams[0].url,
-                  httpReferrer: playingStreams[0].http_referrer ?? undefined,
-                  userAgent: playingStreams[0].user_agent ?? undefined,
-                } : null}
+                streams={(playingStreams ?? []).map((s) => ({
+                  url: s.url,
+                  httpReferrer: s.http_referrer ?? undefined,
+                  userAgent: s.user_agent ?? undefined,
+                }))}
                 onClose={handleClosePlayer}
               />
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { X, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -12,19 +12,48 @@ interface Stream {
 
 interface VideoPlayerProps {
   channelName: string;
-  stream: Stream | null;
+  streams: Stream[];
   onClose: () => void;
 }
 
-export function VideoPlayer({ channelName, stream, onClose }: VideoPlayerProps) {
+export function VideoPlayer({ channelName, streams, onClose }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-   
+
   const playerRef = useRef<{ destroy: () => Promise<void> } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentStreamIndex, setCurrentStreamIndex] = useState(0);
 
-  const initPlayer = async () => {
-    if (!stream || !videoRef.current) return;
+  const currentStream = streams[currentStreamIndex];
+
+  const tryNextStream = useCallback(() => {
+    if (currentStreamIndex < streams.length - 1) {
+      setCurrentStreamIndex((prev) => prev + 1);
+    } else {
+      setError("No working streams available. Try again later.");
+      setLoading(false);
+    }
+  }, [currentStreamIndex, streams.length]);
+
+  const handleRetry = useCallback(() => {
+    setCurrentStreamIndex(0);
+    setError(null);
+  }, []);
+
+  // Reset stream index when streams change (new channel selected)
+  useEffect(() => {
+    setCurrentStreamIndex(0);
+    setError(null);
+  }, [streams]);
+
+  const initPlayer = useCallback(async () => {
+    if (!currentStream || !videoRef.current) {
+      if (streams.length === 0) {
+        setError("No streams available for this channel.");
+        setLoading(false);
+      }
+      return;
+    }
 
     setError(null);
     setLoading(true);
@@ -53,8 +82,7 @@ export function VideoPlayer({ channelName, stream, onClose }: VideoPlayerProps) 
 
       player.addEventListener("error", (event) => {
         console.error("Shaka error:", event);
-        setError("Stream unavailable");
-        setLoading(false);
+        tryNextStream();
       });
 
       // Configure player
@@ -66,15 +94,14 @@ export function VideoPlayer({ channelName, stream, onClose }: VideoPlayerProps) 
         },
       });
 
-      await player.load(stream.url);
+      await player.load(currentStream.url);
       setLoading(false);
       videoRef.current.play();
     } catch (err) {
       console.error("Player error:", err);
-      setError("Failed to load stream");
-      setLoading(false);
+      tryNextStream();
     }
-  };
+  }, [currentStream, streams.length, tryNextStream]);
 
   useEffect(() => {
     initPlayer();
@@ -84,8 +111,7 @@ export function VideoPlayer({ channelName, stream, onClose }: VideoPlayerProps) 
         playerRef.current.destroy();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stream?.url]);
+  }, [initPlayer]);
 
   return (
     <div className="relative w-full overflow-hidden rounded-lg bg-black">
@@ -110,7 +136,7 @@ export function VideoPlayer({ channelName, stream, onClose }: VideoPlayerProps) 
         {error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white">
             <p className="mb-4 text-lg">{error}</p>
-            <Button variant="secondary" onClick={initPlayer}>
+            <Button variant="secondary" onClick={handleRetry}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Retry
             </Button>
