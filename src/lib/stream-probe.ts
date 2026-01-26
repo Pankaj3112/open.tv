@@ -16,60 +16,25 @@ export async function probeStream(url: string, timeout = PROBE_TIMEOUT): Promise
   // Must run on client
   if (typeof window === 'undefined') return false;
 
-  return new Promise(async (resolve) => {
-    const timeoutId = setTimeout(() => {
-      cleanup();
-      resolve(false);
-    }, timeout);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    let player: { destroy: () => Promise<void> } | null = null;
-    const video = document.createElement('video');
-    video.muted = true;
-    video.preload = 'metadata';
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      signal: controller.signal,
+      // Don't follow redirects to avoid loading actual video
+      redirect: 'follow',
+    });
 
-    const cleanup = async () => {
-      clearTimeout(timeoutId);
-      if (player) {
-        try {
-          await player.destroy();
-        } catch {
-          // ignore cleanup errors
-        }
-      }
-      video.src = '';
-      video.load();
-    };
+    clearTimeout(timeoutId);
 
-    try {
-      const shakaModule = await import('shaka-player');
-      const shaka = shakaModule.default;
-
-      shaka.polyfill.installAll();
-
-      if (!shaka.Player.isBrowserSupported()) {
-        cleanup();
-        resolve(false);
-        return;
-      }
-
-      player = new shaka.Player();
-      await (player as unknown as { attach: (el: HTMLVideoElement) => Promise<void> }).attach(video);
-
-      // Listen for errors
-      (player as unknown as { addEventListener: (event: string, cb: () => void) => void }).addEventListener('error', () => {
-        cleanup();
-        resolve(false);
-      });
-
-      // Try to load - success means stream is working
-      await (player as unknown as { load: (url: string) => Promise<void> }).load(url);
-      cleanup();
-      resolve(true);
-    } catch {
-      cleanup();
-      resolve(false);
-    }
-  });
+    // Check if response is successful
+    return response.ok;
+  } catch {
+    clearTimeout(timeoutId);
+    return false;
+  }
 }
 
 export async function probeChannelStreams(streams: ProbeStream[]): Promise<ProbeResult> {
