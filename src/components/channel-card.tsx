@@ -20,6 +20,7 @@ interface ChannelCardProps {
   isFavorite?: boolean;
   onPlay: (channelId: string) => void;
   onToggleFavorite: (channelId: string) => void;
+  probingStatus?: 'pending' | 'probing' | 'working' | 'failed';
 }
 
 export function ChannelCard({
@@ -29,6 +30,7 @@ export function ChannelCard({
   isFavorite,
   onPlay,
   onToggleFavorite,
+  probingStatus,
 }: ChannelCardProps) {
   const [logoError, setLogoError] = useState(false);
 
@@ -36,7 +38,8 @@ export function ChannelCard({
     <div
       className={cn(
         "group relative flex flex-col rounded-lg border bg-card p-3 transition-all hover:shadow-lg hover:-translate-y-0.5 cursor-pointer",
-        isPlaying && "ring-2 ring-primary"
+        isPlaying && "ring-2 ring-primary",
+        (probingStatus === 'pending' || probingStatus === 'probing') && "opacity-70"
       )}
       onClick={() => onPlay(channel.channelId)}
     >
