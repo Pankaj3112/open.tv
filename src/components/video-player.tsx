@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, RefreshCw } from "lucide-react";
+import { X, RefreshCw, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Stream {
@@ -18,11 +18,13 @@ interface VideoPlayerProps {
 
 export function VideoPlayer({ channelName, streams, onClose }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const playerRef = useRef<{ destroy: () => Promise<void> } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentStreamIndex, setCurrentStreamIndex] = useState(0);
+  const [isFloating, setIsFloating] = useState(false);
 
   const currentStream = streams[currentStreamIndex];
 
@@ -113,50 +115,96 @@ export function VideoPlayer({ channelName, streams, onClose }: VideoPlayerProps)
     };
   }, [initPlayer]);
 
+  // Intersection Observer for smart floating
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Float when less than 50% of the player is visible
+        setIsFloating(!entry.isIntersecting);
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  const handleExpand = useCallback(() => {
+    containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
   return (
-    <div className="relative w-full overflow-hidden rounded-lg bg-black">
-      {/* Video container with 16:9 aspect ratio */}
-      <div className="relative aspect-video">
-        <video
-          ref={videoRef}
-          className="h-full w-full"
-          controls
-          autoPlay
-          playsInline
-        />
+    <>
+      {/* Placeholder to maintain layout space */}
+      <div ref={containerRef} className="w-full aspect-video" />
 
-        {/* Loading overlay */}
-        {loading && !error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent" />
+      {/* Floating player */}
+      <div
+        className={`
+          overflow-hidden rounded-lg bg-black shadow-2xl
+          transition-all duration-300 ease-in-out
+          ${isFloating
+            ? "fixed bottom-4 right-4 z-50 w-80 md:w-96"
+            : "absolute inset-0"
+          }
+        `}
+        style={!isFloating ? { position: "absolute", top: 0, left: 0, right: 0 } : undefined}
+      >
+        {/* Video container with 16:9 aspect ratio */}
+        <div className="relative aspect-video">
+          <video
+            ref={videoRef}
+            className="h-full w-full"
+            controls
+            autoPlay
+            playsInline
+          />
+
+          {/* Loading overlay */}
+          {loading && !error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            </div>
+          )}
+
+          {/* Error overlay */}
+          {error && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white">
+              <p className="mb-4 text-lg">{error}</p>
+              <Button variant="secondary" onClick={handleRetry}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Retry
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Player bar */}
+        <div className="flex items-center justify-between bg-card px-4 py-2">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1 text-xs text-red-500">
+              <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+              LIVE
+            </span>
+            <span className={`font-medium ${isFloating ? "text-sm truncate max-w-32" : ""}`}>
+              {channelName}
+            </span>
           </div>
-        )}
-
-        {/* Error overlay */}
-        {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white">
-            <p className="mb-4 text-lg">{error}</p>
-            <Button variant="secondary" onClick={handleRetry}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Retry
+          <div className="flex items-center gap-1">
+            {isFloating && (
+              <Button variant="ghost" size="sm" onClick={handleExpand}>
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="h-4 w-4" />
             </Button>
           </div>
-        )}
-      </div>
-
-      {/* Player bar */}
-      <div className="flex items-center justify-between bg-card px-4 py-2">
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1 text-xs text-red-500">
-            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-            LIVE
-          </span>
-          <span className="font-medium">{channelName}</span>
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
       </div>
-    </div>
+    </>
   );
 }

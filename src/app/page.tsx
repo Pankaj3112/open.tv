@@ -356,7 +356,7 @@ function HomeContent() {
 
         <main className="flex-1 p-4 lg:p-6">
           {filters.playing && playingChannel && (
-            <div className="mb-6">
+            <div className="relative mb-6">
               <VideoPlayer
                 channelName={playingChannel.name}
                 streams={mappedPlayingStreams}
