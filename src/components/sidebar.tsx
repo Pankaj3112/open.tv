@@ -2,7 +2,7 @@
 
 import { SearchInput } from "./search-input";
 import { FilterSection } from "./filter-section";
-import { Heart, History, ArrowLeft, Trash2 } from "lucide-react";
+import { Heart, History, ArrowLeft, Trash2, Wifi } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 
 interface FilterOption {
@@ -50,6 +51,8 @@ interface SidebarProps {
   onHistoryTimeFilterChange: (filter: "today" | "week" | "all") => void;
   onClearFavorites: () => void;
   onClearHistory: () => void;
+  probingEnabled?: boolean;
+  onProbingEnabledChange?: (enabled: boolean) => void;
   className?: string;
 }
 
@@ -76,6 +79,8 @@ export function Sidebar({
   onHistoryTimeFilterChange,
   onClearFavorites,
   onClearHistory,
+  probingEnabled,
+  onProbingEnabledChange,
   className,
 }: SidebarProps) {
   const [showClearFavoritesDialog, setShowClearFavoritesDialog] = useState(false);
@@ -278,9 +283,27 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Favorites & History - Fixed at bottom */}
+      {/* Favorites, History & Stream Check - Fixed at bottom */}
       <div className="shrink-0 border-t border-border p-4">
         <div className="space-y-1">
+          {/* Stream Check Toggle */}
+          {onProbingEnabledChange && (
+            <div className="flex w-full items-center justify-between rounded px-2 py-1.5 text-sm">
+              <div className="flex items-center gap-2">
+                <Wifi className="h-4 w-4" />
+                <Label htmlFor="probing-toggle" className="text-sm cursor-pointer">
+                  Check streams
+                </Label>
+              </div>
+              <Switch
+                id="probing-toggle"
+                size="sm"
+                checked={probingEnabled}
+                onCheckedChange={onProbingEnabledChange}
+              />
+            </div>
+          )}
+
           <button
             onClick={() => {
               onShowFavoritesChange(!showFavorites);

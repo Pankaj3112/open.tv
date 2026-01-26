@@ -17,6 +17,7 @@ import { useChannelsByIds } from "@/hooks/use-channels-by-ids";
 import { useMemo, useState, useCallback, Suspense } from "react";
 import { useChannelProbing } from "@/hooks/use-channel-probing";
 import { ProbeStream } from "@/lib/stream-probe";
+import { useProbingEnabled } from "@/hooks/use-probing-enabled";
 
 function HomeContent() {
   const { filters, updateFilters, clearFilters } = useFilters();
@@ -34,6 +35,9 @@ function HomeContent() {
   const [historyTimeFilter, setHistoryTimeFilter] = useState<
     "today" | "week" | "all"
   >("all");
+
+  // Probing setting
+  const { enabled: probingEnabled, setEnabled: setProbingEnabled } = useProbingEnabled();
 
   const sidebarMode = showFavorites
     ? "favorites"
@@ -73,12 +77,6 @@ function HomeContent() {
     }
   }, []);
 
-  // Probe channels for working streams
-  const { filteredChannels: probedChannels, probingStatus } = useChannelProbing(
-    channels,
-    fetchStreamsForChannel
-  );
-
   // Fetch favorite channels
   const { channels: favoriteChannels, isLoading: favoritesLoading } =
     useChannelsByIds(showFavorites ? favorites : []);
@@ -87,6 +85,20 @@ function HomeContent() {
   const historyChannelIds = getHistoryChannelIds();
   const { channels: historyChannels, isLoading: historyLoading } =
     useChannelsByIds(showHistory ? historyChannelIds : []);
+
+  // Determine which channels to probe based on current view
+  const channelsToProbe = useMemo(() => {
+    if (!probingEnabled) return [];
+    if (showFavorites) return favoriteChannels;
+    if (showHistory) return historyChannels;
+    return channels;
+  }, [probingEnabled, showFavorites, showHistory, favoriteChannels, historyChannels, channels]);
+
+  // Probe channels for working streams
+  const { filteredChannels: probedChannels, probingStatus } = useChannelProbing(
+    channelsToProbe,
+    fetchStreamsForChannel
+  );
 
   // Fetch current playing channel and stream
   const { channel: playingChannel } = useChannel(filters.playing);
@@ -213,13 +225,15 @@ function HomeContent() {
       return filtered;
     }
 
-    return probedChannels;
+    return probingEnabled ? probedChannels : channels;
   }, [
     showFavorites,
     favoriteChannels,
     showHistory,
     historyChannels,
     probedChannels,
+    channels,
+    probingEnabled,
     favoritesSort,
     favorites,
     history,
@@ -377,6 +391,8 @@ function HomeContent() {
           onHistoryTimeFilterChange={setHistoryTimeFilter}
           onClearFavorites={handleClearFavorites}
           onClearHistory={handleClearHistory}
+          probingEnabled={probingEnabled}
+          onProbingEnabledChange={setProbingEnabled}
         />
 
         <main className="flex-1 p-4 lg:p-6">
