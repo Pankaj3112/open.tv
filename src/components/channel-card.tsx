@@ -1,7 +1,8 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Heart } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Heart, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -20,6 +21,7 @@ interface ChannelCardProps {
   isFavorite?: boolean;
   onPlay: (channelId: string) => void;
   onToggleFavorite: (channelId: string) => void;
+  probingStatus?: 'pending' | 'probing' | 'working' | 'failed';
 }
 
 export function ChannelCard({
@@ -29,6 +31,7 @@ export function ChannelCard({
   isFavorite,
   onPlay,
   onToggleFavorite,
+  probingStatus,
 }: ChannelCardProps) {
   const [logoError, setLogoError] = useState(false);
 
@@ -36,7 +39,8 @@ export function ChannelCard({
     <div
       className={cn(
         "group relative flex flex-col rounded-lg border bg-card p-3 transition-all hover:shadow-lg hover:-translate-y-0.5 cursor-pointer",
-        isPlaying && "ring-2 ring-primary"
+        isPlaying && "ring-2 ring-primary",
+        probingStatus === 'failed' && "opacity-60"
       )}
       onClick={() => onPlay(channel.channelId)}
     >
@@ -54,6 +58,34 @@ export function ChannelCard({
           <div className="flex h-full w-full items-center justify-center text-4xl">
             {countryFlag || "📺"}
           </div>
+        )}
+
+        {/* Probing loader */}
+        {(probingStatus === 'pending' || probingStatus === 'probing') && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                <Loader2 className="h-10 w-10 animate-spin text-white" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={-40}>
+              Checking stream availability...
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Failed indicator */}
+        {probingStatus === 'failed' && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <AlertCircle className="h-10 w-10 text-red-500" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={-40}>
+              Stream unavailable
+            </TooltipContent>
+          </Tooltip>
         )}
       </div>
 

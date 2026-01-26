@@ -15,6 +15,9 @@ import { useChannel } from "@/hooks/use-channel";
 import { useStreams } from "@/hooks/use-streams";
 import { useChannelsByIds } from "@/hooks/use-channels-by-ids";
 import { useMemo, useState, useCallback, Suspense } from "react";
+import { useChannelProbing } from "@/hooks/use-channel-probing";
+import { ProbeStream } from "@/lib/stream-probe";
+import { useProbingEnabled } from "@/hooks/use-probing-enabled";
 
 function HomeContent() {
   const { filters, updateFilters, clearFilters } = useFilters();
@@ -32,6 +35,9 @@ function HomeContent() {
   const [historyTimeFilter, setHistoryTimeFilter] = useState<
     "today" | "week" | "all"
   >("all");
+
+  // Probing setting
+  const { enabled: probingEnabled, setEnabled: setProbingEnabled } = useProbingEnabled();
 
   const sidebarMode = showFavorites
     ? "favorites"
@@ -55,6 +61,22 @@ function HomeContent() {
     categories: filters.categories.length ? filters.categories : undefined,
   });
 
+  // Fetch streams for a channel (used by probing)
+  const fetchStreamsForChannel = useCallback(async (channelId: string): Promise<ProbeStream[]> => {
+    try {
+      const res = await fetch(`/api/streams/${channelId}`);
+      const streams = await res.json();
+      return streams.map((s: { url: string; quality?: string; http_referrer?: string; user_agent?: string }) => ({
+        url: s.url,
+        quality: s.quality ?? undefined,
+        httpReferrer: s.http_referrer ?? undefined,
+        userAgent: s.user_agent ?? undefined,
+      }));
+    } catch {
+      return [];
+    }
+  }, []);
+
   // Fetch favorite channels
   const { channels: favoriteChannels, isLoading: favoritesLoading } =
     useChannelsByIds(showFavorites ? favorites : []);
@@ -63,6 +85,20 @@ function HomeContent() {
   const historyChannelIds = getHistoryChannelIds();
   const { channels: historyChannels, isLoading: historyLoading } =
     useChannelsByIds(showHistory ? historyChannelIds : []);
+
+  // Determine which channels to probe based on current view
+  const channelsToProbe = useMemo(() => {
+    if (!probingEnabled) return [];
+    if (showFavorites) return favoriteChannels;
+    if (showHistory) return historyChannels;
+    return channels;
+  }, [probingEnabled, showFavorites, showHistory, favoriteChannels, historyChannels, channels]);
+
+  // Probe channels for working streams
+  const { filteredChannels: probedChannels, probingStatus } = useChannelProbing(
+    channelsToProbe,
+    fetchStreamsForChannel
+  );
 
   // Fetch current playing channel and stream
   const { channel: playingChannel } = useChannel(filters.playing);
@@ -189,13 +225,15 @@ function HomeContent() {
       return filtered;
     }
 
-    return channels;
+    return probingEnabled ? probedChannels : channels;
   }, [
     showFavorites,
     favoriteChannels,
     showHistory,
     historyChannels,
+    probedChannels,
     channels,
+    probingEnabled,
     favoritesSort,
     favorites,
     history,
@@ -353,6 +391,8 @@ function HomeContent() {
           onHistoryTimeFilterChange={setHistoryTimeFilter}
           onClearFavorites={handleClearFavorites}
           onClearHistory={handleClearHistory}
+          probingEnabled={probingEnabled}
+          onProbingEnabledChange={setProbingEnabled}
         />
 
         <main className="flex-1 p-4 lg:p-6">
@@ -385,6 +425,7 @@ function HomeContent() {
             hasMore={hasMore && !showFavorites && !showHistory}
             onLoadMore={handleLoadMore}
             mode={sidebarMode}
+            probingStatus={probingStatus}
           />
         </main>
       </div>
